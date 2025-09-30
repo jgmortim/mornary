@@ -1,17 +1,25 @@
-package com.github.jgmortim;
+package com.github.jgmortim.mornary.model;
+
+import lombok.Getter;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * Represents a Morse code node in a morse code binary tree.
+ *
+ * @author John Mortimore
+ */
+@Getter
 public class Node {
-    CharacterEncoding characterEncoding;
+    Encoding encoding;
     Node left;
     Node right;
 
 
-    Node(CharacterEncoding characterEncoding) {
-        this.characterEncoding = characterEncoding;
+    Node(Encoding encoding) {
+        this.encoding = encoding;
         right = null;
         left = null;
     }
@@ -24,7 +32,7 @@ public class Node {
 
     private void print(StringBuilder buffer, String prefix, String childrenPrefix) {
         buffer.append(prefix);
-        buffer.append(characterEncoding.character);
+        buffer.append(encoding.getCharacter());
         buffer.append('\n');
 
         Set<Node> children = new HashSet<>();
