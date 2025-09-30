@@ -46,5 +46,40 @@ public class MornaryUtilityTest {
         assertEquals(expected, actual);
     }
 
+    @Test
+    void toAscii_empty_success() {
+        final String input = "";
+        final String expected = "";
+
+        final String actual = MornaryUtility.toAscii(input);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void toAscii_letter_success() {
+        final String input = "01000001";
+        final String expected = "A";
+
+        final String actual = MornaryUtility.toAscii(input);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void toAscii_sentence_success() {
+        final String input = """
+                01010100011010000110010100100000011100010111010101101001011000110110101100100000\
+                01100010011100100110111101110111011011100010000001100110011011110111100000100000\
+                01101010011101010110110101110000011100110010000001101111011101100110010101110010\
+                00100000011101000110100001100101001000000110110001100001011110100111100100100000\
+                01100100011011110110011100101110""";
+        final String expected = "The quick brown fox jumps over the lazy dog.";
+
+        final String actual = MornaryUtility.toAscii(input);
+
+        assertEquals(expected, actual);
+    }
+
 
 }

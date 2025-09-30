@@ -10,6 +10,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.StringJoiner;
 
+/**
+ * Service class for Mornary.
+ *
+ * @author John Mortimore
+ */
 public class MornaryService {
 
     private final BinaryTree tree;
@@ -38,29 +43,39 @@ public class MornaryService {
             throw new InvalidBinaryException(binary);
         }
 
-        String dotsAndDashes = binary
+        String morseWithoutSpaces = binary
                 .replace('0', '.')
                 .replace('1', '-');
 
         int index = 0;
         StringJoiner output = new StringJoiner(" ");
-        while (index < dotsAndDashes.length()) {
+        while (index < morseWithoutSpaces.length()) {
             Node node = null;
             int length = 0;
-            int maxLength = Math.min(dotsAndDashes.length() - index, this.tree.getMaxDepth());
+            int maxLength = Math.min(morseWithoutSpaces.length() - index, this.tree.getMaxDepth());
+
+            // Loop until a valid morse encoding is randomly selected
             while (node == null || node.getEncoding() == null) {
 
-                // Randomly select a character length for a morse encoded character
+                // Randomly select a character length for a morse encoded character.
                 length = Math.min(maxLength, 1 + (int) (Math.random() * this.tree.getMaxDepth()));
 
-                // Check if the sequence of that length, starting at the current index, is a valid character
-                node = this.tree.get(dotsAndDashes.substring(index, index + length));
+                // Starting at the current index, Check if the substring with that length is a valid encoding.
+                node = this.tree.get(morseWithoutSpaces.substring(index, index + length));
             }
+
             output.add(node.getEncoding().getCode());
             index += length;
         }
 
         return output.toString();
+    }
+
+    public String morseCodeToBinary(String morse) {
+        return morse
+                .replace('.', '0')
+                .replace('-', '1')
+                .replace(" ", "");
     }
 
 }

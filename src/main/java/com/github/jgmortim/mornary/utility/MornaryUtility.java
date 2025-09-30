@@ -1,7 +1,11 @@
 package com.github.jgmortim.mornary.utility;
 
+import com.github.jgmortim.mornary.exception.InvalidBinaryException;
+
+import java.util.Arrays;
+
 /**
- * Service class for Mornary.
+ * Utility class for Mornary.
  *
  * @author John Mortimore
  */
@@ -30,6 +34,27 @@ public final class MornaryUtility {
             }
         }
         return binary.toString();
+    }
+
+    /**
+     * Converts a binary String to ASCII.
+     *
+     * @param binary The binary String to convert.
+     * @return The equivalent ASCII String.
+     */
+    public static String toAscii(String binary) {
+        if (binary.isEmpty()) {
+            return "";
+        } else if ((!binary.matches("^[0-1]+$"))) {
+            throw new InvalidBinaryException(binary);
+        }
+
+        StringBuilder ascii = new StringBuilder();
+
+        Arrays.stream(binary.split("(?<=\\G.{8})")) // Splits the input string into 8-char-sections (Since a char has 8 bits = 1 byte)
+                .forEach(s -> ascii.append((char) Integer.parseInt(s, 2)));
+
+        return ascii.toString();
     }
 
 }
