@@ -42,3 +42,15 @@ Given the output from the above example:
 2. Map to ones and zeros:
    `010010000110010101101100011011000110111100100000010101110110111101110010011011000110010000100001`
 3. Convert to ASCII: `Hello World!` 
+
+## Usage
+
+Encoding example:
+```
+mornary /e "Hello World"
+```
+
+Decoding example:
+```
+mornary /d ".- . .-. ...-- ..- .-. --.- -.. .- - .- -... --.- -- - .. -.. . .. .- .-. - --.- -.- --- .-- -..- ..- -.-- ...- -.. - .. ..- . ...-"
+```
