@@ -54,3 +54,10 @@ Decoding example:
 ```
 mornary /d ".- . .-. ...-- ..- .-. --.- -.. .- - .- -... --.- -- - .. -.. . .. .- .-. - --.- -.- --- .-- -..- ..- -.-- ...- -.. - .. ..- . ...-"
 ```
+
+## Credits
+
+* 5,000 word English Dictionary sourced from https://github.com/MichaelWehar/Public-Domain-Word-Lists/blob/master/5000-more-common.txt
+  * public domain
+* Huge English dictionary sourced from https://github.com/dwyl/english-words/blob/master/words_alpha.txt
+  * Copyright infochimps

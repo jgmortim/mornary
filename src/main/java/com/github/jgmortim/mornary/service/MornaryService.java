@@ -2,7 +2,6 @@ package com.github.jgmortim.mornary.service;
 
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jgmortim.mornary.Method;
 import com.github.jgmortim.mornary.exception.InvalidBinaryException;
 import com.github.jgmortim.mornary.model.BinaryTree;
 import com.github.jgmortim.mornary.model.Encoding;
@@ -25,6 +24,8 @@ import java.util.stream.Collectors;
  */
 public class MornaryService {
 
+    private static final String MORSE_CODE_WORD_DELIMITER = " / ";
+
     private final BinaryTree tree;
 
     private final List<String> morseDictionary;
@@ -41,7 +42,7 @@ public class MornaryService {
 
         this.tree = new BinaryTree(encodings);
 
-        Set<String> words = Sets.newHashSet(Files.readLines(new File(getClass().getResource("/5000-more-common.txt").toURI().getPath()), Charset.defaultCharset()));
+        Set<String> words = Sets.newHashSet(Files.readLines(new File(getClass().getResource("/EnglishHuge.txt").toURI().getPath()), Charset.defaultCharset()));
 
         this.morseDictionary = words.stream()
                 .map(MorseCode::convertToMorseCode)
@@ -55,68 +56,46 @@ public class MornaryService {
      * @param binary The binary string to convert.
      * @return A valid string of Morse code.
      */
-    public String binaryToMorseCode(String binary, Method method) {
+    public String binaryToMorseCode(String binary) {
         if (!binary.matches("^[0-1]+$")) {
             throw new InvalidBinaryException(binary);
         }
 
-        return switch (method) {
-            case smart -> smartEncode(binary);
-            case dumb -> dumbEncode(binary);
-        };
-    }
-
-
-    private String dumbEncode(String binary) {
-        String morseWithoutSpaces = binary
-                .replace('0', '.')
-                .replace('1', '-');
-
-        int index = 0;
-        StringJoiner output = new StringJoiner(" ");
-        while (index < morseWithoutSpaces.length()) {
-            String letter = this.findLetter(morseWithoutSpaces.substring(index));
-
-            output.add(letter);
-            index += letter.length();
-        }
-
-        return output.toString();
-    }
-
-
-
-    private String smartEncode(String binary) {
         String input = binary
                 .replace('0', '.')
                 .replace('1', '-');
 
-        int index = 0;
-        StringJoiner morseWords = new StringJoiner(" / ");
+        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
-        // Loop until the entire input has been consumed
-        while (index < input.length()) {
-
-            String word = findWord(input.substring(index));
+        // Loop until the entire input has been consumed.
+        while (!input.isEmpty()) {
+            String word = findWord(input, Integer.MAX_VALUE);
             morseWords.add(word);
-            index += word.replace(" ", "").length();
+            input = input.substring(word.replace(" ", "").length());
         }
 
         return morseWords.toString();
     }
 
 
-
     /**
-     * Finds a word in morse code that matches the start of (or the entire) input.
+     * Finds a word in Morse code that matches the start of (or the entire) input.
      * <p>
      * For example, if the input started with ".--", that could match the word "at" (which is ".- -" in morse).
      * In which case, the response would be ".- -".
      *
-     * @param input A string consisting of only dots and dashes.
+     * @param input                     A string consisting of only dots and dashes.
+     * @param numMatchesBeforeSelection The number of matching words to find before selecting one. A large value will
+     *                                  result in a better selection, but will result in worse performance.
      * @return A word that matches the start of the input, but with spaces added at letter breaks.
      */
-    private String findWord(String input) {
+    private String findWord(String input, int numMatchesBeforeSelection) {
+        if (numMatchesBeforeSelection < 0) {
+            throw new IllegalArgumentException(
+                    "numMatchesBeforeSelection [" + numMatchesBeforeSelection + "]  must be greater than 0"
+            );
+        }
+
         // Pick a random index in the morse dictionary to start looking for words that match.
         Random randomGen = new Random();
         int random = randomGen.nextInt(this.morseDictionary.size());
@@ -129,7 +108,7 @@ public class MornaryService {
         // Loop until a match is selected
         while (selectedWord.isEmpty()) {
             // If the dictionary has been exhausted, or we've reached the desired number of matches:
-            if (wordsChecked >= this.morseDictionary.size() || matchingWords.size() >= 10) {
+            if (wordsChecked >= this.morseDictionary.size() || matchingWords.size() >= numMatchesBeforeSelection) {
                 // And no matches were found, find a matching letter and move on.
                 if (matchingWords.isEmpty()) {
                     selectedWord = this.findLetter(input);

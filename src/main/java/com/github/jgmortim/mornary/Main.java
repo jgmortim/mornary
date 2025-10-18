@@ -2,7 +2,7 @@ package com.github.jgmortim.mornary;
 
 import com.epic.morse.service.MorseCode;
 import com.github.jgmortim.mornary.service.MornaryService;
-import com.github.jgmortim.mornary.utility.MornaryUtility;
+import com.github.jgmortim.mornary.utility.AsciiUtility;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
@@ -30,14 +30,14 @@ public class Main implements Callable<Integer> {
         MornaryService service = new MornaryService();
 
         if (encoding) {
-            String binary = MornaryUtility.toAsciiBinary(this.input);
-            String output = service.binaryToMorseCode(binary, Method.smart);
+            String binary = AsciiUtility.toAsciiBinary(this.input);
+            String output = service.binaryToMorseCode(binary);
             System.out.println(output);
             System.out.println(MorseCode.convertToText(output.replace("/", " ")));
         }
         if (decoding) {
             String binary = service.morseCodeToBinary(this.input);
-            String output = MornaryUtility.toAscii(binary);
+            String output = AsciiUtility.toAsciiText(binary);
             System.out.println(output);
         }
 
