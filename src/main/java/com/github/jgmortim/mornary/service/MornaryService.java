@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -90,47 +91,44 @@ public class MornaryService {
      * @return A word that matches the start of the input, but with spaces added at letter breaks.
      */
     private String findWord(String input, int numMatchesBeforeSelection) {
-        if (numMatchesBeforeSelection < 0) {
+        if (numMatchesBeforeSelection <= 0) {
             throw new IllegalArgumentException(
                     "numMatchesBeforeSelection [" + numMatchesBeforeSelection + "]  must be greater than 0"
             );
+        }
+        if (input == null || input.isEmpty()) {
+            return "";
         }
 
         // Pick a random index in the morse dictionary to start looking for words that match.
         Random randomGen = new Random();
         int random = randomGen.nextInt(this.morseDictionary.size());
-        int wordsChecked = 0;
-        String selectedWord = "";
 
-        List<String> matchingWords = new ArrayList<>();
+        final List<String> matchingWords = new ArrayList<>();
 
+        // Loop through the dictionary looking for matching words.
+        for (int i = 0; i < this.morseDictionary.size(); i++) {
+            String word = this.morseDictionary.get(random);
+            String wordWithoutSpaces = word.replace(" ", "");
 
-        // Loop until a match is selected
-        while (selectedWord.isEmpty()) {
-            // If the dictionary has been exhausted, or we've reached the desired number of matches:
-            if (wordsChecked >= this.morseDictionary.size() || matchingWords.size() >= numMatchesBeforeSelection) {
-                // And no matches were found, find a matching letter and move on.
-                if (matchingWords.isEmpty()) {
-                    selectedWord = this.findLetter(input);
-                } else { // Otherwise, take the longest of matches.
-                    selectedWord = matchingWords.stream()
-                            .max(Comparator.comparingInt(String::length))
-                            .get();
+            if (input.startsWith(wordWithoutSpaces)) {
+                matchingWords.add(word);
+                // Break early if the requisite number of matches has been found.
+                if (matchingWords.size() >= numMatchesBeforeSelection) {
+                    break;
                 }
-            // Otherwise, keep checking words from the dictionary
-            } else {
-                String word = this.morseDictionary.get(random);
-                String wordWithoutSpaces = word.replace(" ", "");
-
-                if (input.startsWith(wordWithoutSpaces)) {
-                    matchingWords.add(word);
-                }
-
-                wordsChecked++;
-                random = (random + 1) % this.morseDictionary.size();
             }
+            random = (random + 1) % this.morseDictionary.size();
         }
-        return selectedWord;
+
+
+        // Prefer the longest match (ties are broken randomly for variation)
+        return matchingWords.stream()
+                .min(Comparator.comparingInt(String::length)
+                        .reversed()
+                        .thenComparing(x -> ThreadLocalRandom.current().nextInt())
+                )
+                .orElse(findLetter(input)); // Find a matching letter if there were no matching words.
     }
 
     /**
