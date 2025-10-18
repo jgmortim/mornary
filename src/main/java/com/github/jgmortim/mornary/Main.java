@@ -24,6 +24,9 @@ public class Main implements Callable<Integer> {
     @CommandLine.Option(names = "/d")
     boolean decoding;
 
+    @CommandLine.Option(names = "-n")
+    int numMatchesBeforeSelection = 10;
+
     @Override
     public Integer call() throws Exception {
 
@@ -31,7 +34,7 @@ public class Main implements Callable<Integer> {
 
         if (encoding) {
             String binary = AsciiUtility.toAsciiBinary(this.input);
-            String output = service.binaryToMorseCode(binary);
+            String output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
             System.out.println(output);
             System.out.println(MorseCode.convertToText(output.replace("/", " ")));
         }

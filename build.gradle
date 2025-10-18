@@ -10,8 +10,6 @@ repositories {
 }
 
 dependencies {
-    implementation("com.google.guava:guava:33.5.0-jre")
-
     implementation('com.fasterxml.jackson.core:jackson-databind:2.17.0')
 
     implementation('io.github.SethEpic:morse-code-translator:1.0.5')
