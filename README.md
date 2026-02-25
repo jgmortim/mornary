@@ -1,6 +1,9 @@
 # Mornary
 
-Mornary is a generative steganography application that disguises ASCII text and binary file data as Morse code.
+Mornary is a generative steganography application that disguises ASCII text and binary file data as Morse code. 
+The examples below demonstrate encoding ASCII data, but any arbitrary file can be encoded with Mornary. Although,
+the effect does work best with small files. It would be somewhat suspicious if you tried to distribute megabytes 
+of morse code.
 
 The name Mornary is a portmanteau of Morse and Binary.
 
