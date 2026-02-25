@@ -219,7 +219,6 @@ public class MornaryService {
         }
     }
 
-
     /**
      * Converts the first "actualSize" byte of a byte array into a binary string.
      *
