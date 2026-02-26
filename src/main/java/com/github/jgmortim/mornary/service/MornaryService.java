@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jgmortim.mornary.exception.InvalidBinaryException;
 import com.github.jgmortim.mornary.model.BinaryTree;
 import com.github.jgmortim.mornary.model.Encoding;
+import com.github.jgmortim.mornary.model.IndexedResult;
 import com.github.jgmortim.mornary.model.MorseDictionaryEntry;
 import com.github.jgmortim.mornary.model.Node;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,15 +18,23 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.StringJoiner;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -73,169 +82,113 @@ public class MornaryService {
 
 
     /**
-     * Initial working method. Reads the entire file into memory and then converts it to morse code.
-     * Superseded by {@link #toMorseCode2(URL)}.
      *
-     * TODO Delete when confident in approach.
-     *
-     * @param dataUrl URL of the file to encode.
-     * @return A string of morse code.
+     * @param dataUrl
+     * @param output
+     * @return
      */
-    public String toMorseCode(URL dataUrl) throws IOException {
-        try (InputStream is = dataUrl.openStream();
-             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    public void toMorseCode7(URL dataUrl, URL output) throws IOException, URISyntaxException {
 
-            is.transferTo(baos);
-            byte[] data = baos.toByteArray();
-            StringBuilder binary = new StringBuilder(data.length * 8);
-            for (byte b : data) {
-                // Convert byte to int and mask with 0xFF to handle negative values correctly
-                binary.append(String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
-            }
-            return binaryToMorseCode(binary.toString(), 10);
-
-        } catch (IOException e) {
-            System.err.printf("Failed to read from %s: %s%n", dataUrl, e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Second working method; more elaborate. Reads data into a buffer for processing and reads more data as needed.
-     * Superseded by {@link #toMorseCode3(URL)}.
-     *
-     * TODO Delete when confident in approach.
-     *
-     * @param dataUrl URL of the file to encode.
-     * @return A string of morse code.
-     */
-    public String toMorseCode2(URL dataUrl) throws IOException {
-        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
-        final int bucketSize = 1024; // In Bytes
-
-        try (InputStream is = dataUrl.openStream()) {
-
-            // Read off the first "bucketSize" bytes to the data buffer (or less if the file is under "bucketSize" bytes).
-            byte[] dataBuffer = new byte[bucketSize];
-            int readLength = is.read(dataBuffer, 0, bucketSize);
-
-            String binaryString = "";
-
-            // Loop until all the data has been read into the buffer and the buffer is empty.
-            while (readLength > 0 || !binaryString.isEmpty()) {
-
-                // If data was read in, convert it to a String of 1s and 0s and append to the end of the binaryString
-                if (readLength > 0) {
-                    StringBuilder binary = byteArrayToBinaryString(dataBuffer, readLength);
-                    binaryString += binary.toString();
-                }
-
-                // Convert the binaryString to valid Morse code
-                while (!binaryString.isEmpty()) {
-                    String word = findWord(binaryString, 10);
-                    morseWords.add(word);
-
-                    int bitsConsumed = word.replace(" ", "").length();
-
-                    binaryString = binaryString.substring(bitsConsumed);
-
-                    // If there are less than 100 bits in the binary string
-                    // AND there is more data to be read in,
-                    // break out of loop to read in more data
-                    if (binaryString.length() < 100 && readLength > 0) {
-                        break;
-                    }
-                }
-
-                // Read another "bucketSize" bytes
-                readLength = is.read(dataBuffer, 0, bucketSize);
-            }
-
-            return morseWords.toString();
-
-        } catch (IOException e) {
-            System.err.printf("Failed to read from %s: %s%n", dataUrl, e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Third working method; even more elaborate. Reads entire file into a 2D byte array. Each element in the array
-     * contains "bucketSize" bytes, and each bucket is processed in parallel and then stitched together at the end
-     *
-     * @param dataUrl URL of the file to encode.
-     * @return A string of morse code.
-     */
-    public String toMorseCode3(URL dataUrl) throws IOException, URISyntaxException {
-
-        final int bucketSize = 1024; // In Bytes
+        final int workUnitSize = 1024; // Number of bytes of input to be processed per thread task.
         final int threadPoolSize = 10;
+        final int queueCapacity = threadPoolSize + 10;
 
-        long fileSize = Files.size(Paths.get(dataUrl.toURI()));
-        int numberOfBuckets = (int) Math.ceil((double) fileSize / bucketSize);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                threadPoolSize,
+                threadPoolSize,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(queueCapacity),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
 
-        String[] morseSentences = new String[numberOfBuckets]; // Array to hold the results of each bucket
+        CompletionService<IndexedResult> completionService = new ExecutorCompletionService<>(executor);
 
-        try (InputStream is = dataUrl.openStream()) {
+        try (
+                InputStream is = dataUrl.openStream();
+                BufferedWriter writer = Files.newBufferedWriter(
+                        Paths.get(output.toURI()),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE
+                )
+        ) {
 
-            byte[][] data = new byte[numberOfBuckets][bucketSize];
+            byte[] buffer = new byte[workUnitSize];
+            int readLength;
+            int numWorkUnitsSubmitted = 0;
 
-            int lastBucketDataSize = bucketSize; // Will likely be smaller than the size of the bucket.
-            for (byte[] datum : data) {
-                int readLength = is.read(datum, 0, bucketSize);
-                if (readLength > 0 && readLength < bucketSize) {
-                    lastBucketDataSize = readLength;
-                }
-            }
-            final int lastBucketDataSizeFinal = lastBucketDataSize; // Needs to be final to use in the lambda below.
+            Map<Integer, String> completedWorkUnits = new HashMap<>(); // Holds completed work units until they can be written (removed when written).
+            
+            int writeIndex = 0;
 
-            // Create a thread pool with 1 thread for each bucket.
-            ExecutorService executor = Executors.newFixedThreadPool(Math.min(numberOfBuckets, threadPoolSize));
+            // Submit a task for each "workUnitSize" bytes read-in from the file.
+            while ((readLength = is.read(buffer, 0, workUnitSize)) > 0) {
 
-            // Synchronize with a countdown latch.
-            CountDownLatch latch = new CountDownLatch(data.length);
+                final byte[] workUnit = Arrays.copyOf(buffer, readLength);
+                final int workUnitIndex = numWorkUnitsSubmitted++; // Keeps track of where this work unit fits in the sequence.
+                final int workUnitLength = readLength;
 
-            for (int i = 0; i < data.length; i++) { // For each bucket
-                final int index = i;
-                executor.execute(() -> {    // Send it to the thread pool for processing
-                    final int dataSize = (index == data.length - 1 ? lastBucketDataSizeFinal : bucketSize);
-                    // Convert the "bucketSize" bytes to a character string of dots and dashes
-                    StringBuilder binary = byteArrayToBinaryString(data[index], dataSize);
-                    String input = binary.toString();
-
+                completionService.submit(() -> {
 
                     StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
-                    // Convert the string to valid Morse code
+
+                    // Convert the work unit to a binary string and find an appropriate morse code mapping.
+                    String input = byteArrayToBinaryString(workUnit, workUnitLength).toString();
                     while (!input.isEmpty()) {
                         String word = findWord(input, 10);
                         morseWords.add(word);
-                        input = input.substring(word.replace(" ", "").length());
+                        input = input.substring(
+                                word.replace(" ", "").length()
+                        );
                     }
-                    morseSentences[index] = morseWords.toString();
-                    latch.countDown();
+
+                    return new IndexedResult(workUnitIndex, morseWords.toString());
                 });
+
+                // Drain one completed work unit, if available.
+                Future<IndexedResult> future = completionService.poll();
+                if (future != null) {
+                    IndexedResult completedWorkUnit = future.get();
+                    completedWorkUnits.put(completedWorkUnit.getIndex(), completedWorkUnit.getValue());
+
+                    // Write any available contiguous work units.
+                    while (completedWorkUnits.containsKey(writeIndex)) {
+                        writer.write(completedWorkUnits.remove(writeIndex++));
+                        writer.write(MORSE_CODE_WORD_DELIMITER);
+                    }
+                }
             }
 
-            // Wait for all threads to complete, then shutdown the thread pool.
-            latch.await();
-            executor.shutdown();
+            // Now loop until all remaining work units complete and have been written.
+            while ( writeIndex < numWorkUnitsSubmitted) {
+                IndexedResult completedWorkUnit = completionService.take().get();
+                completedWorkUnits.put(completedWorkUnit.getIndex(), completedWorkUnit.getValue());
 
-            return String.join(MORSE_CODE_WORD_DELIMITER, morseSentences);
+                // Write any available contiguous work units.
+                while (completedWorkUnits.containsKey(writeIndex)) {
+                    writer.write(completedWorkUnits.remove(writeIndex++));
+                    if (writeIndex < numWorkUnitsSubmitted) { // Avoid extra delimiter after final work unit
+                        writer.write(MORSE_CODE_WORD_DELIMITER);
+                    }
+                }
+            }
 
-
-        } catch (IOException e) {
-            System.err.printf("Failed to read from %s: %s%n", dataUrl, e.getMessage());
-            throw e;
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        } finally {
+            executor.shutdown();
         }
     }
 
     /**
      * Converts the first "actualSize" byte of a byte array into a binary string.
      *
-     * @param data       The byte array
-     * @param actualSize The actual size of the data in the array, regardless of the copacity of the array.
+     * @param data       The byte array.
+     * @param actualSize The actual size of the data in the array, regardless of the capacity of the array.
      * @return The binary string.
      */
     private static StringBuilder byteArrayToBinaryString(byte[] data, int actualSize) {
