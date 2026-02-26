@@ -14,23 +14,23 @@ import java.util.concurrent.Callable;
  *
  * @author John Mortimore
  */
-@CommandLine.Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0",
+@CommandLine.Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-SNAPSHOT",
         description = "Disguises ASCII text as Morse code")
 public class Mornary implements Callable<Integer> {
 
     @CommandLine.Parameters(index = "0", description = "The data to encode or decode")
     private String input;
 
-    @CommandLine.Option(names = "/e")
+    @CommandLine.Option(names = "/e", description = "Encode text")
     boolean encoding;
 
-    @CommandLine.Option(names = "/E")
+    @CommandLine.Option(names = "/E", description = "Encode file")
     boolean encodingFile;
 
-    @CommandLine.Option(names = "/d")
+    @CommandLine.Option(names = "/d", description = "decode text")
     boolean decoding;
 
-    @CommandLine.Option(names = "/D")
+    @CommandLine.Option(names = "/D", description = "decode file")
     boolean decodingFile;
 
     @CommandLine.Option(names = "-n")
