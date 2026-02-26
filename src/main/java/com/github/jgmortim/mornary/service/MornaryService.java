@@ -8,15 +8,24 @@ import com.github.jgmortim.mornary.model.Encoding;
 import com.github.jgmortim.mornary.model.MorseDictionaryEntry;
 import com.github.jgmortim.mornary.model.Node;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
+import java.util.StringJoiner;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -44,16 +53,21 @@ public class MornaryService {
         this.tree = new BinaryTree(encodings);
 
         // Load in a dictionary file.
-        URL dictionaryUrl = getClass().getResource("/English5000.txt");
+        try (InputStream input = getClass().getResourceAsStream("/English5000.txt")) {
 
-        if (dictionaryUrl != null) {
-            this.morseDictionary = Files.lines(Paths.get(dictionaryUrl.toURI()))
+            if (input == null) {
+                throw new RuntimeException("Dictionary not found");
+            }
+
+            this.morseDictionary = new BufferedReader(new InputStreamReader(input))
+                    .lines()
                     .map(MorseCode::convertToMorseCode)
                     .map(word -> new MorseDictionaryEntry(word, word.replace(" ", "")))
                     .distinct()
                     .collect(Collectors.toList());
-        } else {
-            throw new RuntimeException("Dictionary not found");
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load dictionary", e);
         }
     }
 

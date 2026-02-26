@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
  */
 @CommandLine.Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0",
         description = "Disguises ASCII text as Morse code")
-public class Main implements Callable<Integer> {
+public class Mornary implements Callable<Integer> {
 
     @CommandLine.Parameters(index = "0", description = "The data to encode or decode")
     private String input;
@@ -79,7 +79,7 @@ public class Main implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main()).execute(args);
+        int exitCode = new CommandLine(new Mornary()).execute(args);
         System.exit(exitCode);
     }
 }
