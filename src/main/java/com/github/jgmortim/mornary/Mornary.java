@@ -4,7 +4,7 @@ import com.github.jgmortim.mornary.service.MornaryService;
 import com.github.jgmortim.mornary.utility.AsciiUtility;
 import picocli.CommandLine;
 
-import java.net.URL;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
@@ -15,27 +15,24 @@ import java.util.concurrent.Callable;
  * @author John Mortimore
  */
 @CommandLine.Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-SNAPSHOT",
-        description = "Disguises ASCII text as Morse code")
+        description = "Disguises text and binary data as Morse code")
 public class Mornary implements Callable<Integer> {
-
-    @CommandLine.Parameters(index = "0", description = "The text or file to encode or decode")
-    String input;
 
     @CommandLine.ArgGroup(multiplicity = "1")
     Mode mode;
 
     static class Mode {
         @CommandLine.Option(names = "/e", description = "Encode text", paramLabel = "<text>")
-        boolean encoding;
+        String encodeText;
 
         @CommandLine.Option(names = "/E", description = "Encode file", paramLabel = "<file>")
-        boolean encodingFile;
+        File encodeFile;
 
         @CommandLine.Option(names = "/d", description = "Decode text", paramLabel = "<text>")
-        boolean decoding;
+        String decodeText;
 
         @CommandLine.Option(names = "/D", description = "Decode file", paramLabel = "<file>")
-        boolean decodingFile;
+        File decodeFile;
     }
 
     @CommandLine.Option(names = "-n", hidden = true)
@@ -46,20 +43,15 @@ public class Mornary implements Callable<Integer> {
 
         MornaryService service = new MornaryService();
 
-        if (mode.encoding) {
-            String binary = AsciiUtility.toAsciiBinary(this.input);
+        if (mode.encodeText != null) {
+            String binary = AsciiUtility.toAsciiBinary(this.mode.encodeText);
             String output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
             System.out.println(output);
-//            System.out.println(MorseCode.convertToText(output.replace("/", " ")));
-        } else if (mode.encodingFile) {
+        } else if (mode.encodeFile != null) {
 
-            URL inputUrl = getClass().getResource(this.input);
-
-            String original = Files.readString(Path.of(inputUrl.toURI()));
-            String morseCode = service.toMorseCode3(inputUrl);
+            String morseCode = service.toMorseCode3(this.mode.encodeFile.toURI().toURL());
 
             //TODO a lot of this is just here for testing because I haven't make any unit tests yet
-//            System.out.println("Encoded:");
             System.out.println(morseCode);
 //            System.out.println("Decoded as Morse:");
 //            System.out.println(MorseCode.convertToText(morseCode.replace("/", " ")));
@@ -68,13 +60,12 @@ public class Mornary implements Callable<Integer> {
 //            String ascii = AsciiUtility.toAsciiText(binary);
 //            System.out.println(ascii);
 //            System.out.println("Matches: " + original.equals(ascii));
-        } else if (mode.decoding) {
-            final String binary = service.morseCodeToBinary(this.input);
+        } else if (mode.decodeText != null) {
+            final String binary = service.morseCodeToBinary(this.mode.decodeText);
             final String output = AsciiUtility.toAsciiText(binary);
             System.out.println(output);
-        } else if (mode.decodingFile) {
-            final URL inputUrl = getClass().getResource(this.input);
-            final String morseCode = Files.readString(Path.of(inputUrl.toURI()));
+        } else if (mode.decodeFile != null) {
+            final String morseCode = Files.readString(Path.of(this.mode.decodeFile.toURI()));
             final String binary = service.morseCodeToBinary(morseCode);
             final String output = AsciiUtility.toAsciiText(binary);
             System.out.println(output);
