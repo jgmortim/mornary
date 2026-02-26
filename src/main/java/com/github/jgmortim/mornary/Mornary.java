@@ -18,22 +18,27 @@ import java.util.concurrent.Callable;
         description = "Disguises ASCII text as Morse code")
 public class Mornary implements Callable<Integer> {
 
-    @CommandLine.Parameters(index = "0", description = "The data to encode or decode")
-    private String input;
+    @CommandLine.Parameters(index = "0", description = "The text or file to encode or decode")
+    String input;
 
-    @CommandLine.Option(names = "/e", description = "Encode text")
-    boolean encoding;
+    @CommandLine.ArgGroup(multiplicity = "1")
+    Mode mode;
 
-    @CommandLine.Option(names = "/E", description = "Encode file")
-    boolean encodingFile;
+    static class Mode {
+        @CommandLine.Option(names = "/e", description = "Encode text", paramLabel = "<text>")
+        boolean encoding;
 
-    @CommandLine.Option(names = "/d", description = "decode text")
-    boolean decoding;
+        @CommandLine.Option(names = "/E", description = "Encode file", paramLabel = "<file>")
+        boolean encodingFile;
 
-    @CommandLine.Option(names = "/D", description = "decode file")
-    boolean decodingFile;
+        @CommandLine.Option(names = "/d", description = "Decode text", paramLabel = "<text>")
+        boolean decoding;
 
-    @CommandLine.Option(names = "-n")
+        @CommandLine.Option(names = "/D", description = "Decode file", paramLabel = "<file>")
+        boolean decodingFile;
+    }
+
+    @CommandLine.Option(names = "-n", hidden = true)
     int numMatchesBeforeSelection = 10;
 
     @Override
@@ -41,12 +46,12 @@ public class Mornary implements Callable<Integer> {
 
         MornaryService service = new MornaryService();
 
-        if (encoding) {
+        if (mode.encoding) {
             String binary = AsciiUtility.toAsciiBinary(this.input);
             String output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
             System.out.println(output);
 //            System.out.println(MorseCode.convertToText(output.replace("/", " ")));
-        } else if (encodingFile) {
+        } else if (mode.encodingFile) {
 
             URL inputUrl = getClass().getResource(this.input);
 
@@ -63,11 +68,11 @@ public class Mornary implements Callable<Integer> {
 //            String ascii = AsciiUtility.toAsciiText(binary);
 //            System.out.println(ascii);
 //            System.out.println("Matches: " + original.equals(ascii));
-        } else if (decoding) {
+        } else if (mode.decoding) {
             final String binary = service.morseCodeToBinary(this.input);
             final String output = AsciiUtility.toAsciiText(binary);
             System.out.println(output);
-        } else if (decodingFile) {
+        } else if (mode.decodingFile) {
             final URL inputUrl = getClass().getResource(this.input);
             final String morseCode = Files.readString(Path.of(inputUrl.toURI()));
             final String binary = service.morseCodeToBinary(morseCode);
