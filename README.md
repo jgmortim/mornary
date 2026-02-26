@@ -51,10 +51,10 @@ Given the output from the above example:
 
 ## Usage Examples:
 
-* Encoding text: `mornary /e "Hello World!"`
-* Encoding a file: `mornary /E "input.txt"`
-* Decoding text: `mornary /d ". / - . . - .... / -- . . - / . / -. / -- .- -.. . / -- .- -.. . / --. / --- -. / . - .... . .-. / - .- -- . / --. / - --- .-- -. / .-. .- -. --. . / .--. .-.. . .- ... . / -"`
-* Decoding a text file: `mornary /D "input.txt"`
+* Encoding text: `mornary -e "Hello World!"`
+* Encoding a file: `mornary -E input.txt -O output.txt`
+* Decoding text: `mornary -d ".- .. .-. -.-- / --.. / . / .-- . ... - / .-- .- -. - / .-- / -.. . .. - -.-- / ...- / -.. / -.-"`
+* Decoding a text file: `mornary -D input.txt -O output.txt`
 
 ## Credits
 

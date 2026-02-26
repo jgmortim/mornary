@@ -6,6 +6,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -26,18 +27,21 @@ public class Mornary implements Callable<Integer> {
     Mode mode;
 
     static class Mode {
-        @Option(names = "/e", description = "Encode text", paramLabel = "<text>")
+        @Option(names = "-e", description = "Encode text", paramLabel = "<text>")
         String encodeText;
 
-        @Option(names = "/d", description = "Decode text", paramLabel = "<text>")
+        @Option(names = "-d", description = "Decode text", paramLabel = "<text>")
         String decodeText;
 
-        @Option(names = "/E", arity = "2", description = "Encode file", paramLabel = "<inputFile> <outputFile>")
-        List<File> encodeFile;
+        @Option(names = "-E", description = "Encode a file", paramLabel = "<inputFile>")
+        File encodeFile;
 
-        @Option(names = "/D", arity = "2", description = "Decode file", paramLabel = "<inputFile> <outputFile>")
-        List<File> decodeFile;
+        @Option(names = "-D", description = "Decode a file", paramLabel = "<inputFile>")
+        File decodeFile;
     }
+
+    @Option(names = "-O", description = "File to write output to. Will write to console if omitted", paramLabel = "<outputFile>")
+    File outputFile;
 
     @Option(names = "-n", hidden = true)
     int numMatchesBeforeSelection = 10;
@@ -47,25 +51,27 @@ public class Mornary implements Callable<Integer> {
 
         MornaryService service = new MornaryService();
 
+        String output = "";
 
         if (this.mode.encodeText != null) {
             String binary = AsciiUtility.toAsciiBinary(mode.encodeText);
-            String output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
-            System.out.println(output);
+            output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
         } else if (this.mode.decodeText != null) {
             final String binary = service.morseCodeToBinary(mode.decodeText);
-            final String output = AsciiUtility.toAsciiText(binary);
-            System.out.println(output);
+            output = AsciiUtility.toAsciiText(binary);
         } else if (this.mode.encodeFile != null) {
-            String morseCode = service.toMorseCode3(this.mode.encodeFile.get(0).toURI().toURL());
-            Path outputPath = this.mode.encodeFile.get(1).toPath();
-            Files.writeString(outputPath, morseCode);
+            output = service.toMorseCode3(this.mode.encodeFile.toURI().toURL());
         } else if (this.mode.decodeFile != null) {
-            final String morseCode = Files.readString(Path.of(this.mode.decodeFile.get(0).toURI()));
+            final String morseCode = Files.readString(Path.of(this.mode.decodeFile.toURI()));
             final String binary = service.morseCodeToBinary(morseCode);
-            final String output = AsciiUtility.toAsciiText(binary);
-            Path outputPath = this.mode.decodeFile.get(1).toPath();
+            output = AsciiUtility.toAsciiText(binary);
+        }
+
+        if (this.outputFile != null) {
+            Path outputPath = this.outputFile.toPath();
             Files.writeString(outputPath, output);
+        } else {
+            System.out.println(output);
         }
 
         return 0;

@@ -195,8 +195,6 @@ public class MornaryService {
             // Synchronize with a countdown latch.
             CountDownLatch latch = new CountDownLatch(data.length);
 
-            System.out.println(numberOfBuckets);
-
             for (int i = 0; i < data.length; i++) { // For each bucket
                 final int index = i;
                 executor.execute(() -> {    // Send it to the thread pool for processing
