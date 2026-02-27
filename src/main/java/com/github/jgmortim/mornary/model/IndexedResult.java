@@ -1,14 +1,11 @@
 package com.github.jgmortim.mornary.model;
 
-import lombok.Getter;
-
-@Getter
-public class IndexedResult {
-    final int index;
-    final String value;
-
-    public IndexedResult(int index, String value) {
-        this.index = index;
-        this.value = value;
-    }
+/**
+ * Represents a completed work unit and were it fits in the overall sequence of work units.
+ *
+ * @param index Index of this work unit.
+ * @param value The result of the work unit.
+ * @author John Mortimore
+ */
+public record IndexedResult(int index, String value) {
 }

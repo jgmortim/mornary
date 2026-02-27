@@ -10,7 +10,6 @@ import picocli.CommandLine.Option;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 /**
@@ -42,52 +41,31 @@ public class Mornary implements Callable<Integer> {
     @Option(names = "-O", description = "File to write output to. Will write to console if omitted", paramLabel = "<outputFile>")
     File outputFile;
 
+    @Option(names = "-t", description = "number of threads", defaultValue = "10")
+    int numThreads;
+
     @Option(names = "-n", hidden = true)
     int numMatchesBeforeSelection = 10;
 
     @Override
     public Integer call() throws Exception {
 
-        MornaryService service = new MornaryService();
+        MornaryService service = new MornaryService(1024, this.numThreads);
 
         if (this.mode.encodeText != null) {
-            final String binary = AsciiUtility.toAsciiBinary(mode.encodeText);
-            final String output = service.binaryToMorseCode(binary, numMatchesBeforeSelection);
-            System.out.println(output);
+            service.encode(this.mode.encodeText);
         } else if (this.mode.decodeText != null) {
-            final String binary = service.morseCodeToBinary(mode.decodeText);
-            final String output = AsciiUtility.toAsciiText(binary);
-            System.out.println(output);
+            service.decode(this.mode.decodeText);
         } else if (this.mode.encodeFile != null) {
-
-
-            service.toMorseCode7(this.mode.encodeFile.toURI().toURL(), this.outputFile.toURI().toURL());
+            service.encode(this.mode.encodeFile, this.outputFile);
 
 
         } else if (this.mode.decodeFile != null) {
-            final String morseCode = Files.readString(Path.of(this.mode.decodeFile.toURI()));
-            final String binary = service.morseCodeToBinary(morseCode);
-            byte[] data = decodeBinary(binary);
-            java.nio.file.Files.write(this.outputFile.toPath(), data);
+            service.decode(this.mode.decodeFile, this.outputFile);
         }
-
 
 
         return 0;
-    }
-
-    static byte[] decodeBinary(String s) {
-        if (s.length() % 8 != 0) throw new IllegalArgumentException("Binary data length must be multiple of 8");
-        byte[] data = new byte[s.length() / 8];
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c == '1') {
-                data[i >> 3] |= 0x80 >> (i & 0x7);
-            } else if (c != '0') {
-                throw new IllegalArgumentException("Invalid char in binary string");
-            }
-        }
-        return data;
     }
 
     public static void main(String[] args) {

@@ -57,4 +57,17 @@ public final class AsciiUtility {
         return ascii.toString();
     }
 
+    public static boolean isAsciiText(byte[] data) {
+        for (byte b : data) {
+            int value = b & 0xFF; // convert to unsigned
+            if (value < 0x20 || value > 0x7E) {
+                // allow tab, LF, CR
+                if (value != 0x09 && value != 0x0A && value != 0x0D) {
+                    return false; // non-ASCII byte found
+                }
+            }
+        }
+        return true;
+    }
+
 }

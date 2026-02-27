@@ -8,17 +8,19 @@ import com.github.jgmortim.mornary.model.Encoding;
 import com.github.jgmortim.mornary.model.IndexedResult;
 import com.github.jgmortim.mornary.model.MorseDictionaryEntry;
 import com.github.jgmortim.mornary.model.Node;
+import com.github.jgmortim.mornary.utility.AsciiUtility;
+import com.github.jgmortim.mornary.utility.BinaryUtilities;
+import com.github.jgmortim.mornary.utility.OutputUtility;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -45,17 +47,31 @@ import java.util.stream.Collectors;
 public class MornaryService {
 
     private static final String MORSE_CODE_WORD_DELIMITER = " / ";
+    private static final String CANT_PRINT_OUTPUT_ERROR_MESSAGE =
+            "No output file specified, but decoded data is not ASCII text and cannot be printed to the console."
+                    + "\nPlease specify an output file and try again.";
 
     private final BinaryTree tree;
 
     private final List<MorseDictionaryEntry> morseDictionary;
 
+    private final int workUnitSize;
+    private final int threadPoolSize;
+    private final int queueCapacity;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Constructs the MornaryService.
+     *
+     * @param workUnitSize   The number of bytes of input to be processed per thread task.
+     * @param threadPoolSize The number of threads to use for encoding.
      */
-    public MornaryService() throws IOException, URISyntaxException {
+    public MornaryService(int workUnitSize, int threadPoolSize) throws IOException {
+        this.workUnitSize = workUnitSize;
+        this.threadPoolSize = threadPoolSize;
+        this.queueCapacity = threadPoolSize + 10;
+
         // Load in the binary tree.
         URL morseUrl = getClass().getResource("/morsecode.json");
         Encoding[] encodings = OBJECT_MAPPER.readValue(morseUrl, Encoding[].class);
@@ -82,48 +98,100 @@ public class MornaryService {
 
 
     /**
+     * Encodes the given input text as morse code and prints the output to the console.
      *
-     * @param dataUrl
-     * @param output
-     * @return
+     * @param input The text to encode.
      */
-    public void toMorseCode7(URL dataUrl, URL output) throws IOException, URISyntaxException {
+    public void encode(String input) {
+        final String binary = AsciiUtility.toAsciiBinary(input);
+        if (!binary.matches("^[0-1]+$")) {
+            throw new InvalidBinaryException(binary);
+        }
 
-        final int workUnitSize = 1024; // Number of bytes of input to be processed per thread task.
-        final int threadPoolSize = 10;
-        final int queueCapacity = threadPoolSize + 10;
+        String unprocessedMorse = binary
+                .replace('0', '.')
+                .replace('1', '-');
 
+        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
+
+        // Loop until the entire input has been consumed.
+        while (!unprocessedMorse.isEmpty()) {
+            String word = findWord(unprocessedMorse, 10);
+            morseWords.add(word);
+            unprocessedMorse = unprocessedMorse.substring(word.replace(" ", "").length());
+        }
+
+        System.out.println(morseWords);
+    }
+
+    /**
+     * Decodes the given input text and prints the output to the console.
+     *
+     * @param input The Morse code to decode.
+     */
+    public void decode(String input) {
+        final String binary = this.morseCodeToBinaryString(input);
+        final String output = AsciiUtility.toAsciiText(binary);
+        System.out.println(output);
+    }
+
+    /**
+     * Encodes the given input file into Morse code and writes the result to the specified output file.
+     * <p>
+     * This method implements a bounded parallel streaming pipeline to process the input file efficiently:
+     * <ul>
+     *     <li>Data is read from the input file in chunks (work units) of {@link #workUnitSize} bytes.
+     *     <li>Each work unit is submitted to a fixed-size thread pool for parallel processing.
+     *     <li>Each thread converts its work unit into Morse code.
+     *     <li>Completed work units are stored temporarily in a small buffer until they can be written in
+     *         the correct sequence to preserve the order of the input (work units are buffered until all preceding
+     *         work units have been written).
+     *     <li>The method writes output incrementally as work units complete, avoiding storing the entire
+     *         output in memory.
+     * </ul>
+     * <p>
+     * Concurrency and memory usage:
+     * <ul>
+     *     <li>The thread pool size and task queue capacity are bounded by {@link #threadPoolSize} and
+     *         {@link #queueCapacity}, respectively, preventing unbounded memory growth even for very large input files.
+     *     <li>The reading thread may execute tasks directly if the queue is full, providing backpressure and ensuring
+     *         memory remains bounded.
+     * </ul>
+     *
+     * @param input  The file to encode as Morse code.
+     * @param output The file to write the Morse code output to. If the file exists, it will be truncated;
+     *               if it does not exist, it will be created.
+     * @implNote This method is designed for large files where reading the entire content into memory is impractical.
+     *           It combines incremental reading, parallel processing, and ordered streaming output for
+     *           efficient memory usage.
+     */
+    public void encode(File input, File output) throws IOException {
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                threadPoolSize,
-                threadPoolSize,
+                this.threadPoolSize,
+                this.threadPoolSize,
                 0L,
                 TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(queueCapacity),
+                new ArrayBlockingQueue<>(this.queueCapacity),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
 
         CompletionService<IndexedResult> completionService = new ExecutorCompletionService<>(executor);
 
         try (
-                InputStream is = dataUrl.openStream();
-                BufferedWriter writer = Files.newBufferedWriter(
-                        Paths.get(output.toURI()),
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE
-                )
+                InputStream is = input.toURI().toURL().openStream();
+                BufferedWriter writer = OutputUtility.createWriter(output)
         ) {
 
-            byte[] buffer = new byte[workUnitSize];
+            byte[] buffer = new byte[this.workUnitSize];
             int readLength;
             int numWorkUnitsSubmitted = 0;
 
             Map<Integer, String> completedWorkUnits = new HashMap<>(); // Holds completed work units until they can be written (removed when written).
-            
+
             int writeIndex = 0;
 
             // Submit a task for each "workUnitSize" bytes read-in from the file.
-            while ((readLength = is.read(buffer, 0, workUnitSize)) > 0) {
+            while ((readLength = is.read(buffer, 0, this.workUnitSize)) > 0) {
 
                 final byte[] workUnit = Arrays.copyOf(buffer, readLength);
                 final int workUnitIndex = numWorkUnitsSubmitted++; // Keeps track of where this work unit fits in the sequence.
@@ -134,11 +202,11 @@ public class MornaryService {
                     StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
                     // Convert the work unit to a binary string and find an appropriate morse code mapping.
-                    String input = byteArrayToBinaryString(workUnit, workUnitLength).toString();
-                    while (!input.isEmpty()) {
-                        String word = findWord(input, 10);
+                    String binaryString = BinaryUtilities.byteArrayToBinaryString(workUnit, workUnitLength);
+                    while (!binaryString.isEmpty()) {
+                        String word = findWord(binaryString, 10);
                         morseWords.add(word);
-                        input = input.substring(
+                        binaryString = binaryString.substring(
                                 word.replace(" ", "").length()
                         );
                     }
@@ -150,7 +218,7 @@ public class MornaryService {
                 Future<IndexedResult> future = completionService.poll();
                 if (future != null) {
                     IndexedResult completedWorkUnit = future.get();
-                    completedWorkUnits.put(completedWorkUnit.getIndex(), completedWorkUnit.getValue());
+                    completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
 
                     // Write any available contiguous work units.
                     while (completedWorkUnits.containsKey(writeIndex)) {
@@ -161,9 +229,9 @@ public class MornaryService {
             }
 
             // Now loop until all remaining work units complete and have been written.
-            while ( writeIndex < numWorkUnitsSubmitted) {
+            while (writeIndex < numWorkUnitsSubmitted) {
                 IndexedResult completedWorkUnit = completionService.take().get();
-                completedWorkUnits.put(completedWorkUnit.getIndex(), completedWorkUnit.getValue());
+                completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
 
                 // Write any available contiguous work units.
                 while (completedWorkUnits.containsKey(writeIndex)) {
@@ -185,56 +253,26 @@ public class MornaryService {
     }
 
     /**
-     * Converts the first "actualSize" byte of a byte array into a binary string.
+     * Decodes the given input file from Morse code into the original binary data and write the result to the
+     * given output file.
      *
-     * @param data       The byte array.
-     * @param actualSize The actual size of the data in the array, regardless of the capacity of the array.
-     * @return The binary string.
+     * @param input  The file containing Morse code to be decoded.
+     * @param output The file to write the output to. If the file exists, it will be truncated;
+     *               if it does not exist, it will be created.
      */
-    private static StringBuilder byteArrayToBinaryString(byte[] data, int actualSize) {
-        StringBuilder binary = new StringBuilder(actualSize * 8);
-        for (int i = 0; i < actualSize; i++) {
-            byte b = data[i];
-            // Convert byte to int and mask with 0xFF to handle negative values correctly
-            binary.append(
-                    String.format("%8s", Integer.toBinaryString(b & 0xFF))
-                            .replace(' ', '0')
-                            .replace('0', '.')
-                            .replace('1', '-')
-            );
+    public void decode(File input, File output) throws IOException {
+        final String morseCode = Files.readString(input.toPath());
+        final String binary = this.morseCodeToBinaryString(morseCode);
+        byte[] data = BinaryUtilities.binaryStringToByteArray(binary);
+
+        if (output != null) {
+            java.nio.file.Files.write(output.toPath(), data);
+        } else if (AsciiUtility.isAsciiText(data)) {
+            System.out.println(new String(data, StandardCharsets.UTF_8));
+        } else {
+            System.out.println(CANT_PRINT_OUTPUT_ERROR_MESSAGE);
         }
-        return binary;
     }
-
-    /**
-     * Converts a binary string to valid Morse code.
-     *
-     * @param binary                    The binary string to convert.
-     * @param numMatchesBeforeSelection The number of matching words to find before selecting one. A larger value will
-     *                                  result in a better selection, but will result in worse performance.
-     * @return A valid string of Morse code.
-     */
-    public String binaryToMorseCode(String binary, int numMatchesBeforeSelection) {
-        if (!binary.matches("^[0-1]+$")) {
-            throw new InvalidBinaryException(binary);
-        }
-
-        String input = binary
-                .replace('0', '.')
-                .replace('1', '-');
-
-        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
-
-        // Loop until the entire input has been consumed.
-        while (!input.isEmpty()) {
-            String word = findWord(input, numMatchesBeforeSelection);
-            morseWords.add(word);
-            input = input.substring(word.replace(" ", "").length());
-        }
-
-        return morseWords.toString();
-    }
-
 
     /**
      * Finds a word in Morse code that matches the start of (or the entire) input.
@@ -312,13 +350,13 @@ public class MornaryService {
     }
 
     /**
-     * Converts a string of morse code into binary.
+     * Converts a string of morse code into a binary string.
      * Dots become zeros, dashes become ones, spaces and forward slashes are removed.
      *
      * @param morse The morse code string.
      * @return The matching binary string.
      */
-    public String morseCodeToBinary(String morse) {
+    public String morseCodeToBinaryString(String morse) {
         return morse
                 .replace('.', '0')
                 .replace('-', '1')
