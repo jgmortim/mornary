@@ -96,9 +96,14 @@ public class MornaryService {
     /**
      * Encodes the given input text as morse code and prints the output to the console.
      *
-     * @param input The text to encode.
+     * @param input  The text to encode.
+     * @param output The file to write the Morse code output to. If the file exists, it will be truncated; if it does not exist,
+     *               it will be created. If null, then encoded data will be printed to the console.
+     * @implNote This method is designed for small text inputs where there are no memory concerns with reading the entire input into
+     *           memory and with writing the entire output in a single operation. For large inputs where memory use and processing
+     *           speed need to be considered, {@link #encode(File, File)} should be used.
      */
-    public void encode(String input) {
+    public void encode(String input, File output) throws IOException {
         final String binary = AsciiUtility.toAsciiBinary(input);
         if (!binary.matches("^[0-1]+$")) {
             throw new InvalidBinaryException(binary);
@@ -117,7 +122,9 @@ public class MornaryService {
             unprocessedMorse = unprocessedMorse.substring(word.replace(" ", "").length());
         }
 
-        System.out.println(morseWords);
+        try (BufferedWriter writer = OutputUtility.createWriter(output)) {
+            writer.write(morseWords.toString());
+        }
     }
 
     /**
@@ -139,27 +146,25 @@ public class MornaryService {
      *     <li>Data is read from the input file in chunks (work units) of {@link #workUnitSize} bytes.
      *     <li>Each work unit is submitted to a fixed-size thread pool for parallel processing.
      *     <li>Each thread converts its work unit into Morse code.
-     *     <li>Completed work units are stored temporarily in a small buffer until they can be written in
-     *         the correct sequence to preserve the order of the input (work units are buffered until all preceding
-     *         work units have been written).
-     *     <li>The method writes output incrementally as work units complete, avoiding storing the entire
-     *         output in memory.
+     *     <li>Completed work units are stored temporarily in a small buffer until they can be written in the correct sequence to
+     *         preserve the order of the input (work units are buffered until all preceding work units have been written).
+     *     <li>The method writes output incrementally as work units complete, avoiding storing the entire output in memory.
      * </ul>
      * <p>
      * Concurrency and memory usage:
      * <ul>
-     *     <li>The thread pool size and task queue capacity are bounded by {@link #threadPoolSize} and
-     *         {@link #queueCapacity}, respectively, preventing unbounded memory growth even for very large input files.
-     *     <li>The reading thread may execute tasks directly if the queue is full, providing backpressure and ensuring
-     *         memory remains bounded.
+     *     <li>The thread pool size and task queue capacity are bounded by {@link #threadPoolSize} and {@link #queueCapacity},
+     *         respectively, preventing unbounded memory growth even for very large input files.
+     *     <li>The reading thread may execute tasks directly if the queue is full, providing backpressure and ensuring memory
+     *         remains bounded.
      * </ul>
      *
      * @param input  The file to encode as Morse code.
-     * @param output The file to write the Morse code output to. If the file exists, it will be truncated;
-     *               if it does not exist, it will be created.
-     * @implNote This method is designed for large files where reading the entire content into memory is impractical.
-     *           It combines incremental reading, parallel processing, and ordered streaming output for
-     *           efficient memory usage.
+     * @param output The file to write the Morse code output to. If the file exists, it will be truncated; if it does not exist,
+     *               it will be created. If null, then encoded data will be printed to the console.
+     * @implNote This method is designed for large files where reading the entire content into memory is impractical. It combines
+     *           incremental reading, parallel processing, and ordered streaming output for efficient memory usage. When these
+     *           concerns do not exist, {@link #encode(String, File)} may be used instead as it has less overhead.
      */
     public void encode(File input, File output) throws IOException {
         ThreadPoolExecutor executor = new ThreadPoolExecutor(

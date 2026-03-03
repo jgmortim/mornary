@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0.alpha.2] - Upcoming
 
+### Added
+
+* Text input encoding can now output to a file if specified. 
+
 ### Changed
 
 * Much more robust file decode method to add support for large files

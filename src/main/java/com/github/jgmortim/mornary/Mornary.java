@@ -14,7 +14,7 @@ import java.util.concurrent.Callable;
  *
  * @author John Mortimore
  */
-@Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-alpha.1",
+@Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-alpha.2",
         description = "Disguises text and binary data as Morse code")
 public class Mornary implements Callable<Integer> {
 
@@ -41,8 +41,6 @@ public class Mornary implements Callable<Integer> {
     @Option(names = "-t", description = "number of threads", defaultValue = "10")
     int numThreads;
 
-    @Option(names = "-n", hidden = true)
-    int numMatchesBeforeSelection = 10;
 
     @Override
     public Integer call() throws Exception {
@@ -50,7 +48,7 @@ public class Mornary implements Callable<Integer> {
         MornaryService service = new MornaryService(1024, this.numThreads);
 
         if (this.mode.encodeText != null) {
-            service.encode(this.mode.encodeText);
+            service.encode(this.mode.encodeText, this.outputFile);
         } else if (this.mode.decodeText != null) {
             service.decode(this.mode.decodeText);
         } else if (this.mode.encodeFile != null) {
