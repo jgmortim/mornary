@@ -2,7 +2,11 @@ package com.github.jgmortim.mornary.utility;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -43,5 +47,25 @@ public class OutputUtility {
                 flush(); // Don't close System.out
             }
         };
+    }
+
+    /**
+     * Creates an appropriate OutputStream for the specified output file.
+     *
+     * @param output The output file to use. If null, then System.out will be used.
+     * @return The OutputStream.
+     */
+    public static OutputStream createOutputStream(File output) throws FileNotFoundException {
+        if (output != null) {
+            return new FileOutputStream(output);
+        } else {
+            return new FilterOutputStream(System.out) {
+                @Override
+                public void close() throws IOException {
+                    flush(); // Don't close System.out
+                }
+            };
+        }
+
     }
 }

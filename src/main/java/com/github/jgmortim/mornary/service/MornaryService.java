@@ -3,6 +3,7 @@ package com.github.jgmortim.mornary.service;
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jgmortim.mornary.exception.InvalidBinaryException;
+import com.github.jgmortim.mornary.exception.NotTextException;
 import com.github.jgmortim.mornary.model.BinaryTree;
 import com.github.jgmortim.mornary.model.Encoding;
 import com.github.jgmortim.mornary.model.IndexedResult;
@@ -18,9 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -47,9 +47,6 @@ import java.util.stream.Collectors;
 public class MornaryService {
 
     private static final String MORSE_CODE_WORD_DELIMITER = " / ";
-    private static final String CANT_PRINT_OUTPUT_ERROR_MESSAGE =
-            "No output file specified, but decoded data is not ASCII text and cannot be printed to the console."
-                    + "\nPlease specify an output file and try again.";
 
     private final BinaryTree tree;
 
@@ -95,7 +92,6 @@ public class MornaryService {
             throw new RuntimeException("Failed to load dictionary", e);
         }
     }
-
 
     /**
      * Encodes the given input text as morse code and prints the output to the console.
@@ -175,7 +171,7 @@ public class MornaryService {
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
 
-        CompletionService<IndexedResult> completionService = new ExecutorCompletionService<>(executor);
+        CompletionService<IndexedResult<String>> completionService = new ExecutorCompletionService<>(executor);
 
         try (
                 InputStream is = input.toURI().toURL().openStream();
@@ -211,13 +207,13 @@ public class MornaryService {
                         );
                     }
 
-                    return new IndexedResult(workUnitIndex, morseWords.toString());
+                    return new IndexedResult<>(workUnitIndex, morseWords.toString());
                 });
 
                 // Drain one completed work unit, if available.
-                Future<IndexedResult> future = completionService.poll();
+                Future<IndexedResult<String>> future = completionService.poll();
                 if (future != null) {
-                    IndexedResult completedWorkUnit = future.get();
+                    IndexedResult<String> completedWorkUnit = future.get();
                     completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
 
                     // Write any available contiguous work units.
@@ -230,7 +226,7 @@ public class MornaryService {
 
             // Now loop until all remaining work units complete and have been written.
             while (writeIndex < numWorkUnitsSubmitted) {
-                IndexedResult completedWorkUnit = completionService.take().get();
+                IndexedResult<String> completedWorkUnit = completionService.take().get();
                 completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
 
                 // Write any available contiguous work units.
@@ -258,19 +254,57 @@ public class MornaryService {
      *
      * @param input  The file containing Morse code to be decoded.
      * @param output The file to write the output to. If the file exists, it will be truncated;
-     *               if it does not exist, it will be created.
+     *               if it does not exist, it will be created. If omitted, and the raw data is text, it will be
+     *               printed to the console. If it's not text, then an error will be thrown
      */
     public void decode(File input, File output) throws IOException {
-        final String morseCode = Files.readString(input.toPath());
-        final String binary = this.morseCodeToBinaryString(morseCode);
-        byte[] data = BinaryUtilities.binaryStringToByteArray(binary);
+        try (
+                InputStream is = input.toURI().toURL().openStream();
+                OutputStream outputStream = OutputUtility.createOutputStream(output)
+        ) {
 
-        if (output != null) {
-            java.nio.file.Files.write(output.toPath(), data);
-        } else if (AsciiUtility.isAsciiText(data)) {
-            System.out.println(new String(data, StandardCharsets.UTF_8));
-        } else {
-            System.out.println(CANT_PRINT_OUTPUT_ERROR_MESSAGE);
+            // Read off the first "workUnitSize" bytes to the data buffer (or less if the file is under "workUnitSize" bytes).
+            byte[] dataBuffer = new byte[this.workUnitSize];
+            int readLength = is.read(dataBuffer, 0, this.workUnitSize);
+
+
+            StringBuilder binaryStringBuffer = new StringBuilder();
+
+            // Loop until all the data has been read into the buffer.
+            while (readLength > 0) {
+
+                // Convert data to ASCII and append to the end of the morseCode string.
+                String morseCode = AsciiUtility.toAsciiTest(dataBuffer, readLength);
+
+                // Decode the morseCode to a binary string and add to the buffer.
+                binaryStringBuffer.append(this.morseCodeToBinaryString(morseCode));
+
+                int numBytes = binaryStringBuffer.length() / 8;
+                int numBitsToWrite = 8 * numBytes;
+
+                byte[] decodedData = BinaryUtilities.binaryStringToByteArray(binaryStringBuffer.substring(0, numBitsToWrite));
+
+                if (output != null || AsciiUtility.isAsciiText(decodedData)) {
+                    outputStream.write(decodedData);
+                } else {
+                    throw new NotTextException();
+                }
+
+                binaryStringBuffer = new StringBuilder(binaryStringBuffer.substring(numBitsToWrite));
+
+                // Read another "workUnitSize" bytes
+                readLength = is.read(dataBuffer, 0, this.workUnitSize);
+            }
+
+            if (!binaryStringBuffer.isEmpty()) {
+                System.out.println("Error: Input file was decoded, but number of bits not divisible by 8. " +
+                        "Remaining bits not written to output: " + binaryStringBuffer);
+            }
+
+
+        } catch (IOException e) {
+            System.err.printf("Failed to read from %s: %s%n", input, e.getMessage());
+            throw e;
         }
     }
 

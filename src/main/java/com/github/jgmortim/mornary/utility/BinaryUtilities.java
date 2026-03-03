@@ -49,7 +49,7 @@ public class BinaryUtilities {
             if (c == '1') {
                 data[i >> 3] |= 0x80 >> (i & 0x7);
             } else if (c != '0') {
-                throw new IllegalArgumentException("Invalid char in binary string");
+                throw new IllegalArgumentException("Invalid char in binary string: " + c);
             }
         }
         return data;

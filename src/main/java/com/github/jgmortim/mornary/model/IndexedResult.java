@@ -7,5 +7,5 @@ package com.github.jgmortim.mornary.model;
  * @param value The result of the work unit.
  * @author John Mortimore
  */
-public record IndexedResult(int index, String value) {
+public record IndexedResult<E>(int index, E value) {
 }

@@ -2,6 +2,7 @@ package com.github.jgmortim.mornary.utility;
 
 import com.github.jgmortim.mornary.exception.InvalidBinaryException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -57,6 +58,23 @@ public final class AsciiUtility {
         return ascii.toString();
     }
 
+    /**
+     * Converts a byte array to ASCII text.
+     *
+     * @param b      The byte array.
+     * @param length The length of the data in the array, regardless of the actual array size.
+     * @return The ASCII text as a string.
+     */
+    public static String toAsciiTest(byte[] b, int length) {
+        return new String(b, 0, length, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Checks if the data in a byte array is ASCII text.
+     *
+     * @param data The byte array to check.
+     * @return True if the data is ASCII text.
+     */
     public static boolean isAsciiText(byte[] data) {
         for (byte b : data) {
             int value = b & 0xFF; // convert to unsigned
