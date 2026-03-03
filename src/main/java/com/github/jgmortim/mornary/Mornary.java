@@ -50,15 +50,12 @@ public class Mornary implements Callable<Integer> {
         if (this.mode.encodeText != null) {
             service.encode(this.mode.encodeText, this.outputFile);
         } else if (this.mode.decodeText != null) {
-            service.decode(this.mode.decodeText);
+            service.decode(this.mode.decodeText, this.outputFile);
         } else if (this.mode.encodeFile != null) {
             service.encode(this.mode.encodeFile, this.outputFile);
-
-
         } else if (this.mode.decodeFile != null) {
             service.decode(this.mode.decodeFile, this.outputFile);
         }
-
 
         return 0;
     }

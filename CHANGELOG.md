@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* Text input encoding can now output to a file if specified. 
+* Text input encoding and decoding can now output to a file if specified
+* Text input decoding handling for non-text output
 
 ### Changed
 

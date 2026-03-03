@@ -128,18 +128,31 @@ public class MornaryService {
     }
 
     /**
-     * Decodes the given input text and prints the output to the console.
+     * Decodes the given input text and writes the output to the specified output file, or to the console if the file is null.
      *
-     * @param input The Morse code to decode.
+     * @param input  The Morse code to decode.
+     * @param output The file to write the output to. If the file exists, it will be truncated;
+     *               if it does not exist, it will be created. If omitted, and the raw data is text, it will be
+     *               printed to the console. If it's not text, then an error will be thrown
      */
-    public void decode(String input) {
+    public void decode(String input, File output) throws IOException {
         final String binary = this.morseCodeToBinaryString(input);
-        final String output = AsciiUtility.toAsciiText(binary);
-        System.out.println(output);
+
+        byte[] decodedData = BinaryUtilities.binaryStringToByteArray(binary);
+
+        try (OutputStream outputStream = OutputUtility.createOutputStream(output)) {
+
+            if (output != null || AsciiUtility.isAsciiText(decodedData)) {
+                outputStream.write(decodedData);
+            } else {
+                throw new NotTextException();
+            }
+        }
     }
 
     /**
-     * Encodes the given input file into Morse code and writes the result to the specified output file.
+     * Encodes the given input file into Morse code and writes the result to the specified output file,
+     * or to the console if output is null.
      * <p>
      * This method implements a bounded parallel streaming pipeline to process the input file efficiently:
      * <ul>
@@ -254,8 +267,8 @@ public class MornaryService {
     }
 
     /**
-     * Decodes the given input file from Morse code into the original binary data and write the result to the
-     * given output file.
+     * Decodes the given input file from Morse code into the original binary data and writes the result to the
+     * given output file, or to the console if output is null.
      *
      * @param input  The file containing Morse code to be decoded.
      * @param output The file to write the output to. If the file exists, it will be truncated;
