@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0.alpha.2] - 2026-03-03
+## [1.0.0-beta.1] - Upcoming
+
+### Changed
+
+* Now using a two dictionary approach for finding morse code words. If no suitable words are found in the common
+  word dictionary, then the rare word dictionary is searched. This has multiple benefits:
+  * Common words are favored over rare words
+  * Faster than only searching the rare word dictionary
+  * Fewer single letter "words" in the output than when using the common word dictionary
+* Scoring for potential words now reduces the score of a word if it was selected as one of the previous 3 words. This
+  reduces the likelihood of repeat words.
+
+## [1.0.0-alpha.2] - 2026-03-03
 
 ### Added
 
@@ -18,9 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Much more robust file decode method to add support for large files
   * Utilizes input and output streaming and limits the amount of input/output data that exists in memory at a time
 
-## [1.0.0.alpha.1] - 2026-02-26
+## [1.0.0-alpha.1] - 2026-02-26
 
 Initial working concept
 
-[1.0.0.alpha.2]: https://github.com/jgmortim/massdrop-ctrl-keymap/compare/v1.0.0-alpha.1...v1.0.0-alpha.2
-[1.0.0.alpha.1]: https://github.com/jgmortim/mornary/releases/tag/v1.0.0-alpha.1
+[1.0.0-beta.1]: https://github.com/jgmortim/mornary/compare/v1.0.0-alpha.2...v1.0.0-beta.1
+[1.0.0-alpha.2]: https://github.com/jgmortim/mornary/compare/v1.0.0-alpha.1...v1.0.0-alpha.2
+[1.0.0-alpha.1]: https://github.com/jgmortim/mornary/releases/tag/v1.0.0-alpha.1

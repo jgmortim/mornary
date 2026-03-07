@@ -12,6 +12,7 @@ import com.mornary.model.Node;
 import com.mornary.utility.AsciiUtility;
 import com.mornary.utility.BinaryUtilities;
 import com.mornary.utility.OutputUtility;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -21,13 +22,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletionService;
@@ -50,7 +52,8 @@ public class MornaryService {
 
     private final BinaryTree tree;
 
-    private final List<MorseDictionaryEntry> morseDictionary;
+    private final List<MorseDictionaryEntry> commonWordsDictionary;
+    private final List<MorseDictionaryEntry> rareWordsDictionary;
 
     private final int workUnitSize;
     private final int threadPoolSize;
@@ -75,13 +78,23 @@ public class MornaryService {
         this.tree = new BinaryTree(encodings);
 
         // Load in a dictionary file.
-        try (InputStream input = getClass().getResourceAsStream("/English5000.txt")) {
+        try (
+                InputStream commonWords = getClass().getResourceAsStream("/English5000.txt");
+                InputStream rareWords = getClass().getResourceAsStream("/EnglishHugeAlpha.txt")
+        ) {
 
-            if (input == null) {
+            if (commonWords == null || rareWords == null) {
                 throw new RuntimeException("Dictionary not found");
             }
 
-            this.morseDictionary = new BufferedReader(new InputStreamReader(input))
+            this.commonWordsDictionary = new BufferedReader(new InputStreamReader(commonWords))
+                    .lines()
+                    .map(MorseCode::convertToMorseCode)
+                    .map(word -> new MorseDictionaryEntry(word, word.replace(" ", "")))
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            this.rareWordsDictionary = new BufferedReader(new InputStreamReader(rareWords))
                     .lines()
                     .map(MorseCode::convertToMorseCode)
                     .map(word -> new MorseDictionaryEntry(word, word.replace(" ", "")))
@@ -116,10 +129,12 @@ public class MornaryService {
         StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
         // Loop until the entire input has been consumed.
+        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
         while (!unprocessedMorse.isEmpty()) {
-            String word = findWord(unprocessedMorse, 10);
+            String word = findWord(unprocessedMorse, previousWords, 10);
             morseWords.add(word);
             unprocessedMorse = unprocessedMorse.substring(word.replace(" ", "").length());
+            previousWords.add(word);
         }
 
         try (BufferedWriter writer = OutputUtility.createWriter(output)) {
@@ -217,12 +232,14 @@ public class MornaryService {
 
                     // Convert the work unit to a binary string and find an appropriate morse code mapping.
                     String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit, workUnitLength);
+                    CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
                     while (!binaryString.isEmpty()) {
-                        String word = findWord(binaryString, 10);
+                        String word = findWord(binaryString, previousWords, 10);
                         morseWords.add(word);
                         binaryString = binaryString.substring(
                                 word.replace(" ", "").length()
                         );
+                        previousWords.add(word);
                     }
 
                     return new IndexedResult<>(workUnitIndex, morseWords.toString());
@@ -316,7 +333,7 @@ public class MornaryService {
 
             if (!binaryStringBuffer.isEmpty()) {
                 System.out.println("Error: Input file was decoded, but number of bits not divisible by 8. " +
-                        "Remaining bits not written to output: " + binaryStringBuffer);
+                                   "Remaining bits not written to output: " + binaryStringBuffer);
             }
 
 
@@ -333,11 +350,13 @@ public class MornaryService {
      * In which case, the response would be ".- -".
      *
      * @param input                     A string consisting of only dots and dashes.
+     * @param previousWords             The N previously selected words. This should not be an exhaustive list.
+     *                                  Used in determining a word's score.
      * @param numMatchesBeforeSelection The number of matching words to find before selecting one. A large value will
      *                                  result in a better selection, but will result in worse performance.
      * @return A word that matches the start of the input, but with spaces at letter breaks.
      */
-    private String findWord(String input, int numMatchesBeforeSelection) {
+    private String findWord(String input, CircularFifoQueue<String> previousWords, int numMatchesBeforeSelection) {
         if (numMatchesBeforeSelection <= 0) {
             throw new IllegalArgumentException(
                     "numMatchesBeforeSelection [" + numMatchesBeforeSelection + "]  must be greater than 0"
@@ -347,33 +366,67 @@ public class MornaryService {
             return "";
         }
 
-        // Pick a random index in the morse dictionary to start looking for words that match.
-        Random randomGen = new Random();
-        int random = randomGen.nextInt(this.morseDictionary.size());
+        final Set<String> matchingWords = new HashSet<>();
 
-        final List<String> matchingWords = new ArrayList<>();
+        // Loop through the common words dictionary looking for matching words.
+        searchDictionary(this.commonWordsDictionary, input, matchingWords, numMatchesBeforeSelection);
 
-        // Loop through the dictionary looking for matching words.
-        for (int i = 0; i < this.morseDictionary.size(); i++) {
-            MorseDictionaryEntry entry = this.morseDictionary.get(random);
-
-            if (input.startsWith(entry.getWordWithoutLetterBreaks())) {
-                matchingWords.add(entry.getWord());
-                // Break early if the requisite number of matches has been found.
-                if (matchingWords.size() >= numMatchesBeforeSelection) {
-                    break;
-                }
-            }
-            random = (random + 1) % this.morseDictionary.size();
+        // If a no matching words were found in the common words dictionary, check the rare words dictionary
+        if (matchingWords.isEmpty()) {
+            searchDictionary(this.rareWordsDictionary, input, matchingWords, numMatchesBeforeSelection);
         }
 
-        // Prefer the longest match (ties are broken randomly for variation)
         return matchingWords.stream()
-                .min(Comparator.comparingInt(String::length)
-                        .reversed()
+                .max(Comparator.comparingInt(word -> scoreWord((String) word, previousWords))
                         .thenComparing(x -> ThreadLocalRandom.current().nextInt())
                 )
                 .orElse(findLetter(input)); // Find a matching letter if there were no matching words.
+    }
+
+    /**
+     * Helper method for {@link #findWord(String, CircularFifoQueue, int)}.
+     *
+     * @param dictionary       The dictionary to search for words.
+     * @param input            A string consisting of only dots and dashes.
+     * @param matches          The list that matching words should be added to.
+     * @param numMatchesToFind The max number of matching words to find before returning.
+     */
+    private void searchDictionary(List<MorseDictionaryEntry> dictionary, String input, Set<String> matches, int numMatchesToFind) {
+        // Pick a random index in the dictionary to start looking for words that match.
+        Random randomGen = new Random();
+        int random = randomGen.nextInt(dictionary.size());
+
+        // Loop through the dictionary looking for matching words.
+        for (int i = 0; i < dictionary.size(); i++) {
+            MorseDictionaryEntry entry = dictionary.get(random);
+
+            if (input.startsWith(entry.getWordWithoutLetterBreaks())) {
+                matches.add(entry.getWord());
+                // Break early if the requisite number of matches has been found.
+                if (matches.size() >= numMatchesToFind) {
+                    break;
+                }
+            }
+            random = (random + 1) % dictionary.size();
+        }
+    }
+
+    /**
+     * Score a given word so that it can be compared to other matching words.
+     *
+     * @param word          The word to score.
+     * @param previousWords The N previously selected words. This should not be an exhaustive list. If word appears in the
+     *                     previousWords, it will have a negative impact on the score.
+     * @return The word score.
+     */
+    private static int scoreWord(String word, CircularFifoQueue<String> previousWords) {
+        // Some file formates produce long sections of repeating bit patterns, this can result in the exact same word being
+        // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
+        int previousWordPenalty = 0;
+        for (int i = 0; i < previousWords.size(); i++) {
+            previousWordPenalty += word.equals(previousWords.get(i)) ? 1 : 0;
+        }
+        return word.length() - previousWordPenalty;
     }
 
     /**

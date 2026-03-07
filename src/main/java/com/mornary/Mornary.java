@@ -14,7 +14,7 @@ import java.util.concurrent.Callable;
  *
  * @author John Mortimore
  */
-@Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-alpha.2",
+@Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-beta.1",
         description = "Disguises text and binary data as Morse code")
 public class Mornary implements Callable<Integer> {
 
