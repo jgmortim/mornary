@@ -292,7 +292,7 @@ public class MornaryService {
             while (readLength > 0) {
 
                 // Convert data to ASCII and append to the end of the morseCode string.
-                String morseCode = AsciiUtility.toAsciiTest(dataBuffer, readLength);
+                String morseCode = AsciiUtility.toAsciiText(dataBuffer, readLength);
 
                 // Decode the morseCode to a binary string and add to the buffer.
                 binaryStringBuffer.append(this.morseCodeToBinaryString(morseCode));

@@ -65,7 +65,7 @@ public final class AsciiUtility {
      * @param length The length of the data in the array, regardless of the actual array size.
      * @return The ASCII text as a string.
      */
-    public static String toAsciiTest(byte[] b, int length) {
+    public static String toAsciiText(byte[] b, int length) {
         return new String(b, 0, length, StandardCharsets.UTF_8);
     }
 
