@@ -408,7 +408,7 @@ public class MornaryService {
      * @param morse The morse code string.
      * @return The matching binary string.
      */
-    public String morseCodeToBinaryString(String morse) {
+    private String morseCodeToBinaryString(String morse) {
         return morse
                 .replace('.', '0')
                 .replace('-', '1')
