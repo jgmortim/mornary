@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,14 +20,14 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * @author John Mortimore
  */
-public class MornaryServiceTest {
+public class MornaryServiceUnitTest {
 
     MornaryService service;
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
 
-    public MornaryServiceTest() throws IOException {
+    public MornaryServiceUnitTest() throws IOException {
         service = new MornaryService(1024, 10);
     }
 
@@ -39,6 +40,8 @@ public class MornaryServiceTest {
     public void tearDown() {
         System.setOut(standardOut);
     }
+
+    /* Text Input Methods */
 
     @Test
     public void encodeText_noOutputFile_validOutputPrintedToConsole() throws IOException {
@@ -112,4 +115,88 @@ public class MornaryServiceTest {
             fail("Output file " + output.getName() + " could not be deleted after test completion");
         }
     }
+
+    /* File Input Methods - Small Text Payload */
+
+    @Test
+    public void encodeTxtFile_noOutputFile_validOutputPrintedToConsole() throws IOException, URISyntaxException {
+        final File input =  new File(getClass().getResource("/payloads/SmallTextFile.txt").toURI());
+
+        // Output is not deterministic, but with the letter and word breaks removed, it must match the following.
+        final String expectedWithoutBreaks =
+                ".-.-.-...--.-....--..-.-..-......---...-.---.-.-.--.-..-.--...--.--.-.--..-......--...-..---..-." +
+                ".--.----.---.---.--.---...-......--..--..--.----.----.....-......--.-.-..---.-.-.--.--.-.---...." +
+                ".---..--..-......--.----.---.--..--..-.-.---..-...-......---.-...--.-....--..-.-..-......--.--.." +
+                ".--....-.----.-..----..-..-......--..-...--.----.--..---..-.---.";
+
+        this.service.encode(input, null);
+
+        final String actual = outputStreamCaptor.toString();
+        System.out.println(actual);
+
+        assertTrue(actual.matches("^[.\\- /]+$")); // Only dots, dashes, spaces, and slashes.
+
+        final String actualWithoutBreaks = actual.replace(" ", "").replace("/", "");
+
+        assertEquals(expectedWithoutBreaks, actualWithoutBreaks);
+    }
+
+    @Test
+    public void encodeTxtText_outputFile_validOutputWrittenToFile() throws IOException, URISyntaxException {
+        final File input =  new File(getClass().getResource("/payloads/SmallTextFile.txt").toURI());
+
+        // Output is not deterministic, but with the letter and word breaks removed, it must match the following.
+        final String expectedWithoutBreaks =
+                ".-.-.-...--.-....--..-.-..-......---...-.---.-.-.--.-..-.--...--.--.-.--..-......--...-..---..-." +
+                ".--.----.---.---.--.---...-......--..--..--.----.----.....-......--.-.-..---.-.-.--.--.-.---...." +
+                ".---..--..-......--.----.---.--..--..-.-.---..-...-......---.-...--.-....--..-.-..-......--.--.." +
+                ".--....-.----.-..----..-..-......--..-...--.----.--..---..-.---.";
+
+        final File output = new File("testOut.txt");
+
+        this.service.encode(input, output);
+
+        final String outputFileContents = new String(Files.readAllBytes(output.toPath()));
+
+        assertTrue(outputFileContents.matches("^[.\\- /]+$")); // Only dots, dashes, spaces, and slashes.
+
+        final String actualWithoutBreaks = outputFileContents.replace(" ", "").replace("/", "");
+
+        assertEquals(expectedWithoutBreaks, actualWithoutBreaks);
+
+        if (!output.delete()) { //delete the output file after test runs
+            fail("Output file " + output.getName() + " could not be deleted after test completion");
+        }
+    }
+
+    @Test
+    public void decodeTxtFile_noOutputFile_correctOutputPrintedToConsole() throws IOException, URISyntaxException {
+        final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
+
+        final String expected = "The quick brown fox jumps over the lazy dog.";
+
+        this.service.decode(input, null);
+
+        assertEquals(expected, outputStreamCaptor.toString());
+    }
+
+    @Test
+    public void decodeTxtFile_outputFile_correctOutputWrittenToFile() throws IOException, URISyntaxException {
+        final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
+
+        final String expected = "The quick brown fox jumps over the lazy dog.";
+
+        final File output = new File("testOut.txt");
+
+        this.service.decode(input, output);
+
+        String outputFileContents = new String(Files.readAllBytes(output.toPath()));
+
+        assertEquals(expected, outputFileContents);
+
+        if (!output.delete()) { //delete the output file after test runs
+            fail("Output file " + output.getName() + " could not be deleted after test completion");
+        }
+    }
+
 }

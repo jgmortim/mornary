@@ -23,7 +23,8 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation("commons-io:commons-io:2.21.0")
 }
 
 compileJava {
