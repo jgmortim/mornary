@@ -216,7 +216,7 @@ public class MornaryService {
                     StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
                     // Convert the work unit to a binary string and find an appropriate morse code mapping.
-                    String binaryString = BinaryUtilities.byteArrayToBinaryString(workUnit, workUnitLength);
+                    String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit, workUnitLength);
                     while (!binaryString.isEmpty()) {
                         String word = findWord(binaryString, 10);
                         morseWords.add(word);

@@ -14,13 +14,14 @@ public class BinaryUtilities {
     }
 
     /**
-     * Converts the first "actualSize" byte of a byte array into a binary string.
+     * Converts the first "actualSize" byte of a byte array into a morse binary string. In other words, it's a binary string, except
+     * every 0 is a dot and every 1 is a dash.
      *
      * @param data       The byte array.
      * @param actualSize The actual size of the data in the array, regardless of the capacity of the array.
-     * @return The binary string.
+     * @return The Morse binary string.
      */
-    public static String byteArrayToBinaryString(byte[] data, int actualSize) {
+    public static String byteArrayToMorseBinaryString(byte[] data, int actualSize) {
         StringBuilder binary = new StringBuilder(actualSize * 8);
         for (int i = 0; i < actualSize; i++) {
             byte b = data[i];
