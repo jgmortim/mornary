@@ -1,6 +1,5 @@
 package com.mornary;
 
-import com.github.jgmortim.mornary.utility.BinaryUtilities;
 import com.mornary.service.MornaryService;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -8,9 +7,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 /**
