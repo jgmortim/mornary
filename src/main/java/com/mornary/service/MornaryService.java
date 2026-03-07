@@ -1,17 +1,17 @@
-package com.github.jgmortim.mornary.service;
+package com.mornary.service;
 
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jgmortim.mornary.exception.InvalidBinaryException;
-import com.github.jgmortim.mornary.exception.NotTextException;
-import com.github.jgmortim.mornary.model.BinaryTree;
-import com.github.jgmortim.mornary.model.Encoding;
-import com.github.jgmortim.mornary.model.IndexedResult;
-import com.github.jgmortim.mornary.model.MorseDictionaryEntry;
-import com.github.jgmortim.mornary.model.Node;
-import com.github.jgmortim.mornary.utility.AsciiUtility;
-import com.github.jgmortim.mornary.utility.BinaryUtilities;
-import com.github.jgmortim.mornary.utility.OutputUtility;
+import com.mornary.exception.InvalidBinaryException;
+import com.mornary.exception.NotTextException;
+import com.mornary.model.BinaryTree;
+import com.mornary.model.Encoding;
+import com.mornary.model.IndexedResult;
+import com.mornary.model.MorseDictionaryEntry;
+import com.mornary.model.Node;
+import com.mornary.utility.AsciiUtility;
+import com.mornary.utility.BinaryUtilities;
+import com.mornary.utility.OutputUtility;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

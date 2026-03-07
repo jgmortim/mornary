@@ -32,13 +32,13 @@ compileJava {
 
 
 application {
-    mainClass = 'com.github.jgmortim.mornary.Mornary'
+    mainClass = 'com.mornary.Mornary'
 }
 
 jar {
     manifest {
         attributes(
-                'Main-Class': 'com.github.jgmortim.mornary.Mornary'
+                'Main-Class': 'com.mornary.Mornary'
         )
     }
 }

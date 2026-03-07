@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.model;
+package com.mornary.model;
 
 /**
  * Represents a completed work unit and were it fits in the overall sequence of work units.

@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.exception;
+package com.mornary.exception;
 
 /**
  * Exception to throw when an output file has not been specified, but the output data is not text and can't be

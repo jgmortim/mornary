@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.utility;
+package com.mornary.utility;
 
 /**
  * Utility class for operations involving binary.

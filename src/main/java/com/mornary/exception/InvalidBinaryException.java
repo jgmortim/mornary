@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.exception;
+package com.mornary.exception;
 
 /**
  * Exception to throw when attempting to process a binary input that contains characters other than 0 and 1.

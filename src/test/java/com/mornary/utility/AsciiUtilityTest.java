@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.utility;
+package com.mornary.utility;
 
 import org.junit.jupiter.api.Test;
 

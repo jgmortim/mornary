@@ -1,6 +1,6 @@
-package com.github.jgmortim.mornary.utility;
+package com.mornary.utility;
 
-import com.github.jgmortim.mornary.exception.InvalidBinaryException;
+import com.mornary.exception.InvalidBinaryException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

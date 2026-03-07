@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.exception;
+package com.mornary.exception;
 
 /**
  * Exception to throw when attempting to process a Morse code input that contains characters other than dots, dashes,

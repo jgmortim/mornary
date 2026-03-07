@@ -1,4 +1,4 @@
-package com.github.jgmortim.mornary.model;
+package com.mornary.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
