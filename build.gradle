@@ -6,6 +6,7 @@ plugins {
 
 group = 'com.github.jgmortim'
 version = '1.0.0-beta.1'
+ext.msiVersion = '1.0.0.11' // Windows versions can only use numbers and periods.
 
 repositories {
     mavenCentral()
@@ -40,7 +41,7 @@ application {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // or your version
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -50,6 +51,22 @@ jar {
                 'Main-Class': 'com.mornary.Mornary'
         )
     }
+}
+
+// Use jpackage to create a Windows installer (.msi)
+tasks.register('jpackageWindows', Exec) {
+    dependsOn shadowJar
+
+    commandLine 'jpackage',
+            '--type', 'msi',
+            '--input', layout.buildDirectory.dir("libs").get().asFile,
+            '--main-jar', shadowJar.archiveFileName.get(),
+            '--main-class', 'com.mornary.Mornary',
+            '--name', 'Mornary',
+            '--app-version', msiVersion,
+            '--dest', layout.buildDirectory.dir("installer").get().asFile,
+            '--win-console',
+            '--icon', 'mornary-icon.ico'
 }
 
 test {
