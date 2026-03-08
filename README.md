@@ -1,16 +1,20 @@
 # Mornary
 
-Mornary is a generative steganography application that disguises ASCII text and binary file data as Morse code. 
-The examples below demonstrate encoding ASCII data, but any arbitrary file can be encoded with Mornary. Although,
-the effect does work best with small files — it would be somewhat suspicious if you tried to distribute megabytes 
-of morse code.
+This application is covered in much greater depth at https://mornary.com
+
+Mornary is an opensource command-line application that encodes arbitrary binary data as Morse code that decodes into
+English words. A standard Morse decoder sees ordinary text, while a Mornary decoder reconstructs the hidden binary 
+payload. The result is a generative steganographic system where the carrier itself is a Morse signal rather than
+a modified file.
 
 The name Mornary is a portmanteau of Morse and Binary.
 
 ## Mechanism
 
 This application takes advantage of the fact that binary and Morse code are both expressed with two characters.
-`0` and `1` for binary; and `.` and `-` for Morse.
+`0` and `1` for binary; and `.` and `-` for Morse. The examples below demonstrate encoding ASCII data, but any
+arbitrary file can be encoded with Mornary. Although, the effect does work best with small files — it would be
+somewhat suspicious if you tried to distribute megabytes of morse code.
 
 ### Encoding
 
@@ -25,11 +29,11 @@ Take the string `Hello World!` for example.
 2. Map to dots and dashes:
    `.-..-....--..-.-.--.--...--.--...--.----..-......-.-.---.--.----.---..-..--.--...--..-....-....-`
 3. Intelligently add spaces and slashes throughout:
-   `. / - . . - .... / -- . . - / . / -. / -- .- -.. . / -- .- -.. . / --. / --- -. / . - .... . .-. / - .- -- . / --. / - --- .-- -. / .-. .- -. --. . / .--. .-.. . .- ... . / -`
+   `.-. . -.. . . -- . .-. / - . -- .--. . .- -. / --. .. --. --- - / . .-.. . ...- . -. / - -- . -- .- / --- .-- -. . -.. / -- .- -.. .-- . . -.. / .. -. ... -`
 
 The result is perfectly valid Morse code. If you were to translate this, it would yield:
 
-`MEET E N MADE MADE G ON ETHER TAME G TOWN RANGE PLEASE T`
+`REDEEMER TEMPEAN GIGOT ELEVEN TMEMA OWNED MADWEED INST`
 
 By ensuring that the resulting Morse code translates to valid English words (for the most part), we better sell the
 effect that this is morse code.
@@ -41,7 +45,7 @@ dashes are replaced with ones. Then convert the resulting binary string to ASCII
 
 Given the output from the above example: 
 
-`. / - . . - .... / -- . . - / . / -. / -- .- -.. . / -- .- -.. . / --. / --- -. / . - .... . .-. / - .- -- . / --. / - --- .-- -. / .-. .- -. --. . / .--. .-.. . .- ... . / -`
+`.-. . -.. . . -- . .-. / - . -- .--. . .- -. / --. .. --. --- - / . .-.. . ...- . -. / - -- . -- .- / --- .-- -. . -.. / -- .- -.. .-- . . -.. / .. -. ... -`
 
 1. Remove spaces and slashes: 
    `.-..-....--..-.-.--.--...--.--...--.----..-......-.-.---.--.----.---..-..--.--...--..-....-....-`
@@ -51,10 +55,20 @@ Given the output from the above example:
 
 ## Usage Examples:
 
-* Encoding text: `mornary -e "Hello World!"`
-* Encoding a file: `mornary -E input.txt -O output.txt`
-* Decoding text: `mornary -d ".- .. .-. -.-- / --.. / . / .-- . ... - / .-- .- -. - / .-- / -.. . .. - -.-- / ...- / -.. / -.-"`
-* Decoding a text file: `mornary -D input.txt -O output.txt`
+    // Encoding text
+    mornary -e "Hello World!"
+
+    // Encoding a file
+    mornary -E input.txt -O output.txt
+
+    // Decoding text
+    mornary -d ".- .. .-. -.-- / --.. / . / .-- . ... - / .-- .- -. - / .-- / -.. . .. - -.-- / ...- / -.. / -.-"
+
+    // Decoding a text file
+    mornary -D input.txt -O output.txt
+
+    // View help
+    mornary -h
 
 ## Credits
 
