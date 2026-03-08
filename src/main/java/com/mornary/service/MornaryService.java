@@ -74,8 +74,11 @@ public class MornaryService {
 
         // Load in the binary tree.
         URL morseUrl = getClass().getResource("/morsecode.json");
-        Encoding[] encodings = OBJECT_MAPPER.readValue(morseUrl, Encoding[].class);
-        this.tree = new BinaryTree(encodings);
+        assert morseUrl != null;
+        try (InputStream in = morseUrl.openStream()) {
+            Encoding[] encodings = OBJECT_MAPPER.readValue(in, Encoding[].class);
+            this.tree = new BinaryTree(encodings);
+        }
 
         // Load in a dictionary file.
         try (
