@@ -1,6 +1,7 @@
 package com.mornary;
 
 import com.mornary.converter.PositiveIntConverter;
+import com.mornary.configuration.ShortErrorMessageHandler;
 import com.mornary.service.MornaryService;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -15,8 +16,15 @@ import java.util.concurrent.Callable;
  *
  * @author John Mortimore
  */
-@Command(name = "mornary", mixinStandardHelpOptions = true, version = "Mornary 1.0.0-beta.1",
-    description = "Generative steganography using morse code.", sortOptions = false, sortSynopsis = false)
+@Command(
+    name = "mornary",
+    version = "Mornary 1.0.0-beta.1",
+    description = "Generative steganography using morse code.",
+    sortOptions = false,
+    sortSynopsis = false,
+    usageHelpAutoWidth = true,
+    mixinStandardHelpOptions = true
+)
 public class Mornary implements Callable<Integer> {
 
     @ArgGroup(multiplicity = "1")
@@ -91,7 +99,9 @@ public class Mornary implements Callable<Integer> {
      * @param args Application arguments
      */
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Mornary()).execute(args);
+        int exitCode = new CommandLine(new Mornary())
+            .setParameterExceptionHandler(new ShortErrorMessageHandler())
+            .execute(args);
         System.exit(exitCode);
     }
 }
