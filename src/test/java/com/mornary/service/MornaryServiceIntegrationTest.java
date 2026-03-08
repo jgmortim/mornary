@@ -45,7 +45,6 @@ public class MornaryServiceIntegrationTest {
         System.setOut(standardOut);
     }
 
-
     @ParameterizedTest
     @ValueSource(strings = {
             "/payloads/SmallTextFile.txt",

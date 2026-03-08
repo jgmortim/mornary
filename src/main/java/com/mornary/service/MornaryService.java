@@ -209,6 +209,9 @@ public class MornaryService {
 
         CompletionService<IndexedResult<String>> completionService = new ExecutorCompletionService<>(executor);
 
+        final long fileSize = input.length();
+        final long totalWorkUnits = (long) Math.ceil((double) fileSize / this.workUnitSize);
+
         try (
                 InputStream is = input.toURI().toURL().openStream();
                 BufferedWriter writer = OutputUtility.createWriter(output)
@@ -258,6 +261,9 @@ public class MornaryService {
                     while (completedWorkUnits.containsKey(writeIndex)) {
                         writer.write(completedWorkUnits.remove(writeIndex++));
                         writer.write(MORSE_CODE_WORD_DELIMITER);
+                        if (output != null) { // If using a file output, print progress to console.
+                            this.printProgress(writeIndex, totalWorkUnits);
+                        }
                     }
                 }
             }
@@ -272,6 +278,9 @@ public class MornaryService {
                     writer.write(completedWorkUnits.remove(writeIndex++));
                     if (writeIndex < numWorkUnitsSubmitted) { // Avoid extra delimiter after final work unit
                         writer.write(MORSE_CODE_WORD_DELIMITER);
+                    }
+                    if (output != null) { // If using a file output, print progress to console.
+                        this.printProgress(writeIndex, totalWorkUnits);
                     }
                 }
             }
@@ -296,6 +305,10 @@ public class MornaryService {
      *               printed to the console. If it's not text, then an error will be thrown
      */
     public void decode(File input, File output) throws IOException {
+
+        final long fileSize = input.length();
+        final long totalWorkUnits = (long) Math.ceil((double) fileSize / this.workUnitSize);
+
         try (
                 InputStream is = input.toURI().toURL().openStream();
                 OutputStream outputStream = OutputUtility.createOutputStream(output)
@@ -307,6 +320,7 @@ public class MornaryService {
 
 
             StringBuilder binaryStringBuffer = new StringBuilder();
+            int writeIndex = 0;
 
             // Loop until all the data has been read into the buffer.
             while (readLength > 0) {
@@ -326,6 +340,11 @@ public class MornaryService {
                     outputStream.write(decodedData);
                 } else {
                     throw new NotTextException();
+                }
+                writeIndex++;
+
+                if (output != null) { // If using a file output, print progress to console.
+                    this.printProgress(writeIndex, totalWorkUnits);
                 }
 
                 binaryStringBuffer = new StringBuilder(binaryStringBuffer.substring(numBitsToWrite));
@@ -470,6 +489,17 @@ public class MornaryService {
                 .replace('-', '1')
                 .replace(" ", "")
                 .replace("/", "");
+    }
+
+    /**
+     * Prints the current progress percentage to the console.
+     *
+     * @param workUnitsWritten The number of completed work units that have been written to the output file.
+     * @param totalWorkUnits   The total number of work units in the operation.
+     */
+    private void printProgress(long workUnitsWritten, long totalWorkUnits) {
+        double progress = 100 * ((double) workUnitsWritten / totalWorkUnits);
+        System.out.printf("\rWork Units Completed: %d of %d (%.2f%%)", workUnitsWritten, totalWorkUnits, progress);
     }
 
 }
