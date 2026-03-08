@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * Fewer single letter "words" in the output than when using the common word dictionary
 * Scoring for potential words now reduces the score of a word if it was selected as one of the previous 3 words. This
   reduces the likelihood of repeat words.
+* Improved CLI experience with better help message and argument descriptions
 
 ## [1.0.0-alpha.2] - 2026-03-03
 

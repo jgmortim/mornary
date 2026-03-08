@@ -1,5 +1,6 @@
 package com.mornary;
 
+import com.mornary.converter.PositiveIntConverter;
 import com.mornary.service.MornaryService;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
@@ -10,35 +11,60 @@ import java.io.File;
 import java.util.concurrent.Callable;
 
 /**
- * Mornary
+ * Mornary command line interface.
  *
  * @author John Mortimore
  */
-@Command(name = "mornary", mixinStandardHelpOptions = true, version = "mornary 1.0.0-beta.1",
-        description = "Disguises text and binary data as Morse code")
+@Command(name = "mornary", mixinStandardHelpOptions = true, version = "Mornary 1.0.0-beta.1",
+    description = "Generative steganography using morse code.", sortOptions = false, sortSynopsis = false)
 public class Mornary implements Callable<Integer> {
 
     @ArgGroup(multiplicity = "1")
-    Mode mode;
+    Operation operation;
 
-    static class Mode {
-        @Option(names = "-e", description = "Encode text", paramLabel = "<text>")
+    static class Operation {
+        @Option(
+            order = 0,
+            names = {"-e", "--encode"}, paramLabel = "<text>",
+            description = "Encodes the supplied text."
+        )
         String encodeText;
 
-        @Option(names = "-d", description = "Decode text", paramLabel = "<text>")
-        String decodeText;
-
-        @Option(names = "-E", description = "Encode a file", paramLabel = "<inputFile>")
+        @Option(
+            order = 1,
+            names = {"-E", "--Encode"}, paramLabel = "<file>",
+            description = "Encodes the supplied file."
+        )
         File encodeFile;
 
-        @Option(names = "-D", description = "Decode a file", paramLabel = "<inputFile>")
+        @Option(
+            order = 2,
+            names = {"-d", "--decode"}, paramLabel = "<text>",
+            description = "Decodes the supplied Mornary-encoded text."
+        )
+        String decodeText;
+
+        @Option(
+            order = 3,
+            names = {"-D", "--Decode"}, paramLabel = "<file>",
+            description = "Decodes the Mornary-encoded contents of the supplied file."
+        )
         File decodeFile;
     }
 
-    @Option(names = "-O", description = "File to write output to. Will write to console if omitted", paramLabel = "<outputFile>")
+    @Option(
+        order = 4,
+        names = {"-O", "--Output"}, paramLabel = "<file>",
+        description = "Writes the output to the supplied file. If omitted, output will be printed to the console."
+    )
     File outputFile;
 
-    @Option(names = "-t", description = "number of threads", defaultValue = "10")
+    @Option(
+        order = 5,
+        names = {"-t", "--threads"}, paramLabel = "<int>", defaultValue = "10",
+        description = "Sets the thread pool size. Only used when encoding files. Defaults to 10.",
+        converter = PositiveIntConverter.class
+    )
     int numThreads;
 
     @Override
@@ -46,19 +72,24 @@ public class Mornary implements Callable<Integer> {
 
         MornaryService service = new MornaryService(1024, this.numThreads);
 
-        if (this.mode.encodeText != null) {
-            service.encode(this.mode.encodeText, this.outputFile);
-        } else if (this.mode.decodeText != null) {
-            service.decode(this.mode.decodeText, this.outputFile);
-        } else if (this.mode.encodeFile != null) {
-            service.encode(this.mode.encodeFile, this.outputFile);
-        } else if (this.mode.decodeFile != null) {
-            service.decode(this.mode.decodeFile, this.outputFile);
+        if (this.operation.encodeText != null) {
+            service.encode(this.operation.encodeText, this.outputFile);
+        } else if (this.operation.decodeText != null) {
+            service.decode(this.operation.decodeText, this.outputFile);
+        } else if (this.operation.encodeFile != null) {
+            service.encode(this.operation.encodeFile, this.outputFile);
+        } else if (this.operation.decodeFile != null) {
+            service.decode(this.operation.decodeFile, this.outputFile);
         }
 
         return 0;
     }
 
+    /**
+     * Main method.
+     *
+     * @param args Application arguments
+     */
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Mornary()).execute(args);
         System.exit(exitCode);
