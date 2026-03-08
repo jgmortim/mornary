@@ -4,9 +4,12 @@ plugins {
     id 'com.gradleup.shadow' version '8.3.0'
 }
 
-group = 'com.github.jgmortim'
+group = 'com.mornary'
 version = '1.0.0-beta.1'
-ext.msiVersion = '1.0.0.11' // Windows versions can only use numbers and periods.
+
+ext {
+    msiVersion = '1.0.0.11' // Windows versions can only use numbers and periods.
+}
 
 repositories {
     mavenCentral()
@@ -30,27 +33,18 @@ dependencies {
     testImplementation("commons-io:commons-io:2.21.0")
 }
 
-compileJava {
-    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
-}
-
-
-application {
-    mainClass = 'com.mornary.Mornary'
-}
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
-jar {
-    manifest {
-        attributes(
-                'Main-Class': 'com.mornary.Mornary'
-        )
-    }
+application {
+    mainClass = 'com.mornary.Mornary'
+}
+
+compileJava {
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
 // Use jpackage to create a Windows installer (.msi)
@@ -61,7 +55,7 @@ tasks.register('jpackageWindows', Exec) {
             '--type', 'msi',
             '--input', layout.buildDirectory.dir("libs").get().asFile,
             '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', 'com.mornary.Mornary',
+            '--main-class', application.mainClass.get(),
             '--name', 'Mornary',
             '--app-version', msiVersion,
             '--dest', layout.buildDirectory.dir("installer").get().asFile,
