@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reduces the likelihood of repeat words.
 * Improved CLI experience with better help message and argument descriptions
 
+### Dependency Upgrades
+
+* jackson-databind from `2.17.0` to `2.21.1`
+
 ## [1.0.0-alpha.2] - 2026-03-03
 
 ### Added
