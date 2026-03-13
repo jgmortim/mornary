@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Upgraded Java from version `17` to `21`
 * Upgraded Gradle from version `8.13` to `8.14.3`
 
+### Dependency Updates
+
+* lombok from `1.18.42` to `1.18.44`
+
 ## [1.0.0-beta.1] - 2026-03-08
 
 ### Added

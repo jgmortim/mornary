@@ -5,10 +5,10 @@ plugins {
 }
 
 group = 'com.mornary'
-version = '1.0.0-beta.1'
+version = '1.0.0'
 
 ext {
-    msiVersion = '1.0.0.11' // Windows versions can only use numbers and periods.
+    msiVersion = '1.0.0' // Windows versions can only use numbers and periods.
 }
 
 repositories {
@@ -25,8 +25,8 @@ dependencies {
     implementation('info.picocli:picocli:4.7.7')
     annotationProcessor('info.picocli:picocli-codegen:4.7.7')
 
-    compileOnly("org.projectlombok:lombok:1.18.42")
-    annotationProcessor("org.projectlombok:lombok:1.18.42")
+    compileOnly("org.projectlombok:lombok:1.18.44")
+    annotationProcessor("org.projectlombok:lombok:1.18.44")
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation('org.junit.jupiter:junit-jupiter')
