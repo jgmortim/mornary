@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Represents a Morse code node in a morse code binary tree.
+ * Represents a Morse code node in a Morse code binary tree.
  *
  * @author John Mortimore
  */

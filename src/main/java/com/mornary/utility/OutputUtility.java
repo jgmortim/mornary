@@ -28,7 +28,7 @@ public class OutputUtility {
     /**
      * Creates a BufferedWriter for the specified output file.
      *
-     * @param output The output file to use. If null, then System.out will be used.
+     * @param output The output file to use. If null, then <code>System.out</code> will be used.
      * @return The BufferedWriter.
      */
     public static BufferedWriter createWriter(File output) throws IOException {
@@ -52,7 +52,7 @@ public class OutputUtility {
     /**
      * Creates an appropriate OutputStream for the specified output file.
      *
-     * @param output The output file to use. If null, then System.out will be used.
+     * @param output The output file to use. If null, then <code>System.out</code> will be used.
      * @return The OutputStream.
      */
     public static OutputStream createOutputStream(File output) throws FileNotFoundException {

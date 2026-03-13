@@ -14,7 +14,7 @@ public class BinaryUtilities {
     }
 
     /**
-     * Converts the first "actualSize" byte of a byte array into a morse binary string. In other words, it's a binary string, except
+     * Converts the first "actualSize" byte of a byte array into a Morse binary string. In other words, it's a binary string, except
      * every 0 is a dot and every 1 is a dash.
      *
      * @param data       The byte array.

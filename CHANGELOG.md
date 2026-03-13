@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Now using a two dictionary approach for finding morse code words. If no suitable words are found in the common
+* Now using a two dictionary approach for finding Morse code words. If no suitable words are found in the common
   word dictionary, then the rare word dictionary is searched. This has multiple benefits:
   * Common words are favored over rare words
   * Faster than only searching the rare word dictionary

@@ -16,6 +16,6 @@ public class InvalidMorseCodeException extends RuntimeException {
      *              later retrieval by the {@link #getMessage()} method.
      */
     public InvalidMorseCodeException(String morse) {
-        super("The provided string " + morse + " is not valid morse code");
+        super("The provided string " + morse + " is not valid Morse code");
     }
 }

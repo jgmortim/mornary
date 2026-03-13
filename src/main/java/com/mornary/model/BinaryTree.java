@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.util.Arrays;
 
 /**
- * A binary tree implementation based on morse code. Dots branch left and dashes branch right.
+ * A binary tree implementation based on Morse code. Dots branch left and dashes branch right.
  *
  * @author John Mortimore
  */

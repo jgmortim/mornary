@@ -480,7 +480,7 @@ public class MornaryService {
      * Converts a string of morse code into a binary string.
      * Dots become zeros, dashes become ones, spaces and forward slashes are removed.
      *
-     * @param morse The morse code string.
+     * @param morse The Morse code string.
      * @return The matching binary string.
      */
     private String morseCodeToBinaryString(String morse) {

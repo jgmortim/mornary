@@ -12,7 +12,7 @@ mornary -e "hello"
 .-- .- . ... / -- . . - / . - .- -. --. / .. -- .--. ..- - . / - ---
 ```
 
-Mornary is an opensource command-line application that encodes arbitrary binary data as Morse code that decodes into
+Mornary is an open-source command-line application that encodes arbitrary binary data as Morse code that decodes into
 English words. A standard Morse decoder sees ordinary text, while a Mornary decoder reconstructs the hidden binary 
 payload. The result is a generative steganographic system where the carrier itself is a Morse signal rather than
 a modified file.
@@ -84,7 +84,7 @@ mornary -h
 This application takes advantage of the fact that binary and Morse code are both expressed with two characters.
 `0` and `1` for binary; and `.` and `-` for Morse. The examples below demonstrate encoding ASCII data, but any
 arbitrary file can be encoded with Mornary. Although, the effect does work best with small files — it would be
-somewhat suspicious if you tried to distribute megabytes of morse code.
+somewhat suspicious if you tried to distribute megabytes of Morse code.
 
 ### Encoding
 
@@ -106,7 +106,7 @@ The result is perfectly valid Morse code. If you were to translate this, it woul
 `REDEEMER TEMPEAN GIGOT ELEVEN TMEMA OWNED MADWEED INST`
 
 By ensuring that the resulting Morse code translates to valid English words (for the most part), we better sell the
-effect that this is morse code.
+effect that this is Morse code.
 
 ### Decoding
 
