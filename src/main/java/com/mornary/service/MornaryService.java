@@ -80,7 +80,7 @@ public class MornaryService {
             this.tree = new BinaryTree(encodings);
         }
 
-        // Load in a dictionary file.
+        // Load in a dictionary files.
         try (
                 InputStream commonWords = getClass().getResourceAsStream("/English5000.txt");
                 InputStream rareWords = getClass().getResourceAsStream("/EnglishHugeAlpha.txt")

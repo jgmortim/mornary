@@ -9,7 +9,7 @@ import picocli.CommandLine.ITypeConverter;
  */
 public class PositiveIntConverter implements ITypeConverter<Integer> {
     @Override
-    public Integer convert(String value) throws Exception {
+    public Integer convert(String value) {
 
         try {
             int v = Integer.parseInt(value);
