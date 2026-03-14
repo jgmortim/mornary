@@ -11,13 +11,19 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class MorseDictionaryEntry {
+
+    /**
+     * The English word.
+     */
+    String english;
+
     /**
      * The word in Morse code with spaces for letter breaks.
      */
-    String word;
+    String morse;
 
     /**
-     * The word in Morse code with letter breaks removed.
+     * The word in Morse code with letter and word breaks removed.
      */
-    String wordWithoutLetterBreaks;
+    String morseNoBreaks;
 }

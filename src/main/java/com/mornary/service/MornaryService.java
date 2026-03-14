@@ -2,13 +2,15 @@ package com.mornary.service;
 
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mornary.exception.InvalidBinaryException;
 import com.mornary.exception.NotTextException;
 import com.mornary.model.BinaryTree;
+import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
 import com.mornary.model.IndexedResult;
 import com.mornary.model.MorseDictionaryEntry;
 import com.mornary.model.Node;
+import com.mornary.model.Match;
+import com.mornary.model.WorkUnit;
 import com.mornary.utility.AsciiUtility;
 import com.mornary.utility.BinaryUtilities;
 import com.mornary.utility.OutputUtility;
@@ -22,7 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,8 +54,17 @@ public class MornaryService {
 
     private final BinaryTree tree;
 
-    private final List<MorseDictionaryEntry> commonWordsDictionary;
-    private final List<MorseDictionaryEntry> rareWordsDictionary;
+    static final List<WeightedDictionary> WEIGHTED_DICTIONARIES = List.of(
+        new WeightedDictionary("/5grams_english.txt", 20, 1.5),
+        new WeightedDictionary("/4grams_english.txt", 20, 1.1),
+        new WeightedDictionary("/English5000.txt", 30, 1.0),    // Top 5000 common English words
+        new WeightedDictionary("/3grams_english.txt", 20, 1.0),
+        new WeightedDictionary("/2grams_english.txt", 20, .9),  // 5000 English 2grams
+        new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .8) // Hugh English dictionary
+    );
+    static final int NUM_MATCHES_TO_FIND = 50;
+
+    static final MorseDictionaryEntry EMPTY_ENTRY = new MorseDictionaryEntry("", "", "");
 
     private final int workUnitSize;
     private final int threadPoolSize;
@@ -80,32 +91,30 @@ public class MornaryService {
             this.tree = new BinaryTree(encodings);
         }
 
-        // Load in a dictionary files.
-        try (
-                InputStream commonWords = getClass().getResourceAsStream("/English5000.txt");
-                InputStream rareWords = getClass().getResourceAsStream("/EnglishHugeAlpha.txt")
-        ) {
+        // Load in dictionary files.
+        for (WeightedDictionary weightedDictionary : WEIGHTED_DICTIONARIES) {
+            try (
+                InputStream is = getClass().getResourceAsStream(weightedDictionary.getFilename())
+            ) {
+                if (is == null) {
+                    throw new RuntimeException("Dictionary not found: " +  weightedDictionary.getFilename());
+                }
 
-            if (commonWords == null || rareWords == null) {
-                throw new RuntimeException("Dictionary not found");
+                weightedDictionary.setDictionary(
+                    new BufferedReader(new InputStreamReader(is))
+                        .lines()
+                        .map(word -> {
+                            String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
+                            String morseNoBreaks = morse.replace(" ", "").replace("/", "");
+                            return new MorseDictionaryEntry(word, morse, morseNoBreaks);
+                        })
+                        .distinct()
+                        .collect(Collectors.toList())
+                );
+
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load dictionary", e);
             }
-
-            this.commonWordsDictionary = new BufferedReader(new InputStreamReader(commonWords))
-                    .lines()
-                    .map(MorseCode::convertToMorseCode)
-                    .map(word -> new MorseDictionaryEntry(word, word.replace(" ", "")))
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            this.rareWordsDictionary = new BufferedReader(new InputStreamReader(rareWords))
-                    .lines()
-                    .map(MorseCode::convertToMorseCode)
-                    .map(word -> new MorseDictionaryEntry(word, word.replace(" ", "")))
-                    .distinct()
-                    .collect(Collectors.toList());
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load dictionary", e);
         }
     }
 
@@ -120,28 +129,14 @@ public class MornaryService {
      *           speed need to be considered, {@link #encode(File, File)} should be used.
      */
     public void encode(String input, File output) throws IOException {
-        final String binary = AsciiUtility.toAsciiBinary(input);
-        if (!binary.matches("^[0-1]+$")) {
-            throw new InvalidBinaryException(binary);
-        }
+        byte[] data = input.getBytes(StandardCharsets.UTF_8);
 
-        String unprocessedMorse = binary
-                .replace('0', '.')
-                .replace('1', '-');
+        WorkUnit workUnit = new WorkUnit(data, data.length, 0);
 
-        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
-
-        // Loop until the entire input has been consumed.
-        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
-        while (!unprocessedMorse.isEmpty()) {
-            String word = findWord(unprocessedMorse, previousWords, 10);
-            morseWords.add(word);
-            unprocessedMorse = unprocessedMorse.substring(word.replace(" ", "").length());
-            previousWords.add(word);
-        }
+        String encodedWorkUnit = this.encodeWorkUnit(workUnit);
 
         try (BufferedWriter writer = OutputUtility.createWriter(output)) {
-            writer.write(morseWords.toString());
+            writer.write(encodedWorkUnit);
         }
     }
 
@@ -198,91 +193,60 @@ public class MornaryService {
      *           concerns do not exist, {@link #encode(String, File)} may be used instead as it has less overhead.
      */
     public void encode(File input, File output) throws IOException {
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                this.threadPoolSize,
-                this.threadPoolSize,
-                0L,
-                TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(this.queueCapacity),
-                new ThreadPoolExecutor.CallerRunsPolicy()
-        );
-
-        CompletionService<IndexedResult<String>> completionService = new ExecutorCompletionService<>(executor);
 
         final long fileSize = input.length();
         final long totalWorkUnits = (long) Math.ceil((double) fileSize / this.workUnitSize);
+        final boolean printingProgress = output != null; // Progress updates are printed to the console only when output is written to a file.
+
+        final int actualNumberOfThreads = Math.toIntExact(Math.min(totalWorkUnits, this.threadPoolSize));
+
+        final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+            actualNumberOfThreads, actualNumberOfThreads,
+            0L, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(this.queueCapacity),
+            new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+
+        final CompletionService<IndexedResult<String>> completionService = new ExecutorCompletionService<>(executor);
 
         try (
                 InputStream is = input.toURI().toURL().openStream();
                 BufferedWriter writer = OutputUtility.createWriter(output)
         ) {
 
-            byte[] buffer = new byte[this.workUnitSize];
-            int readLength;
-            int numWorkUnitsSubmitted = 0;
-
-            Map<Integer, String> completedWorkUnits = new HashMap<>(); // Holds completed work units until they can be written (removed when written).
-
+            int readIndex = 0;
             int writeIndex = 0;
+            int readLength;
+            byte[] readBuffer = new byte[this.workUnitSize];
+            final Map<Integer, String> writeBuffer = new HashMap<>(); // Holds completed work units until they can be written (removed when written).
 
             // Submit a task for each "workUnitSize" bytes read-in from the file.
-            while ((readLength = is.read(buffer, 0, this.workUnitSize)) > 0) {
+            while ((readLength = is.read(readBuffer, 0, this.workUnitSize)) > 0) {
 
-                final byte[] workUnit = Arrays.copyOf(buffer, readLength);
-                final int workUnitIndex = numWorkUnitsSubmitted++; // Keeps track of where this work unit fits in the sequence.
-                final int workUnitLength = readLength;
+                WorkUnit workUnit = new WorkUnit(readBuffer, readLength, readIndex++);
 
-                completionService.submit(() -> {
-
-                    StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
-
-                    // Convert the work unit to a binary string and find an appropriate morse code mapping.
-                    String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit, workUnitLength);
-                    CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
-                    while (!binaryString.isEmpty()) {
-                        String word = findWord(binaryString, previousWords, 10);
-                        morseWords.add(word);
-                        binaryString = binaryString.substring(
-                                word.replace(" ", "").length()
-                        );
-                        previousWords.add(word);
-                    }
-
-                    return new IndexedResult<>(workUnitIndex, morseWords.toString());
+                completionService.submit(() -> { // Submit the work unit.
+                    String encodedWorkUnit = encodeWorkUnit(workUnit);
+                    return new IndexedResult<>(workUnit.getIndex(), encodedWorkUnit);
                 });
 
                 // Drain one completed work unit, if available.
                 Future<IndexedResult<String>> future = completionService.poll();
                 if (future != null) {
                     IndexedResult<String> completedWorkUnit = future.get();
-                    completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
+                    writeBuffer.put(completedWorkUnit.index(), completedWorkUnit.value());
 
                     // Write any available contiguous work units.
-                    while (completedWorkUnits.containsKey(writeIndex)) {
-                        writer.write(completedWorkUnits.remove(writeIndex++));
-                        writer.write(MORSE_CODE_WORD_DELIMITER);
-                        if (output != null) { // If using a file output, print progress to console.
-                            this.printProgress(writeIndex, totalWorkUnits);
-                        }
-                    }
+                    writeIndex = writeCompletedWorkUnits(writeBuffer, writeIndex, writer, totalWorkUnits, printingProgress);
                 }
             }
 
             // Now loop until all remaining work units complete and have been written.
-            while (writeIndex < numWorkUnitsSubmitted) {
+            while (writeIndex < readIndex) {
                 IndexedResult<String> completedWorkUnit = completionService.take().get();
-                completedWorkUnits.put(completedWorkUnit.index(), completedWorkUnit.value());
+                writeBuffer.put(completedWorkUnit.index(), completedWorkUnit.value());
 
-                // Write any available contiguous work units.
-                while (completedWorkUnits.containsKey(writeIndex)) {
-                    writer.write(completedWorkUnits.remove(writeIndex++));
-                    if (writeIndex < numWorkUnitsSubmitted) { // Avoid extra delimiter after final work unit
-                        writer.write(MORSE_CODE_WORD_DELIMITER);
-                    }
-                    if (output != null) { // If using a file output, print progress to console.
-                        this.printProgress(writeIndex, totalWorkUnits);
-                    }
-                }
+                writeIndex = writeCompletedWorkUnits(writeBuffer, writeIndex, writer, totalWorkUnits, printingProgress);
             }
 
         } catch (InterruptedException e) {
@@ -366,10 +330,33 @@ public class MornaryService {
     }
 
     /**
+     * Encodes a single work unit into Morse code.
+     *
+     * @param workUnit A single work unit to be encoded into Morse.
+     * @return The encoded work unit.
+     */
+    private String encodeWorkUnit(WorkUnit workUnit) {
+        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
+
+        // Convert the work unit to a binary string and find an appropriate morse code mapping.
+        String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit.getData(), workUnit.getLength());
+        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
+        while (!binaryString.isEmpty()) {
+            MorseDictionaryEntry entry = findWord(binaryString, previousWords, NUM_MATCHES_TO_FIND);
+            morseWords.add(entry.getMorse());
+            binaryString = binaryString.substring(entry.getMorseNoBreaks().length());
+            previousWords.add(entry.getEnglish());
+        }
+        return morseWords.toString();
+    }
+
+    /**
      * Finds a word in Morse code that matches the start of (or the entire) input.
      * <p>
      * For example, if the input started with ".--", that could match the word "at" (which is ".- -" in morse).
      * In which case, the response would be ".- -".
+     * <p>
+     * Helper method for {@link #encodeWorkUnit(WorkUnit)}.
      *
      * @param input                     A string consisting of only dots and dashes.
      * @param previousWords             The N previously selected words. This should not be an exhaustive list.
@@ -378,77 +365,68 @@ public class MornaryService {
      *                                  result in a better selection, but will result in worse performance.
      * @return A word that matches the start of the input, but with spaces at letter breaks.
      */
-    private String findWord(String input, CircularFifoQueue<String> previousWords, int numMatchesBeforeSelection) {
+    private MorseDictionaryEntry findWord(String input, CircularFifoQueue<String> previousWords, int numMatchesBeforeSelection) {
         if (numMatchesBeforeSelection <= 0) {
             throw new IllegalArgumentException(
                     "numMatchesBeforeSelection [" + numMatchesBeforeSelection + "]  must be greater than 0"
             );
         }
         if (input == null || input.isEmpty()) {
-            return "";
+            return EMPTY_ENTRY;
         }
 
-        final Set<String> matchingWords = new HashSet<>();
+        final Set<Match> matchingWords = new HashSet<>();
 
-        // Loop through the common words dictionary looking for matching words.
-        searchDictionary(this.commonWordsDictionary, input, matchingWords, numMatchesBeforeSelection);
-
-        // If a no matching words were found in the common words dictionary, check the rare words dictionary
-        if (matchingWords.isEmpty()) {
-            searchDictionary(this.rareWordsDictionary, input, matchingWords, numMatchesBeforeSelection);
+        for (WeightedDictionary weightedDictionary : WEIGHTED_DICTIONARIES) {
+            searchDictionary(weightedDictionary, input, matchingWords, previousWords);
+            if (matchingWords.size() >= NUM_MATCHES_TO_FIND) {
+                break;
+            }
         }
 
         return matchingWords.stream()
-                .max(Comparator.comparingInt(word -> scoreWord((String) word, previousWords))
-                        .thenComparing(x -> ThreadLocalRandom.current().nextInt())
-                )
-                .orElse(findLetter(input)); // Find a matching letter if there were no matching words.
+            .max(Comparator.comparingDouble(word -> ((Match) word).getScore())
+                .thenComparing(x -> ThreadLocalRandom.current().nextInt())
+            )
+            .orElse(findLetter(input)) // Find a matching letter if there were no matching words.
+            .getEntry();
     }
 
     /**
+     * Searches a weighted dictionary for words that match the start of (or the entire) input and adds them to the set of matches.
+     * <p>
      * Helper method for {@link #findWord(String, CircularFifoQueue, int)}.
      *
-     * @param dictionary       The dictionary to search for words.
-     * @param input            A string consisting of only dots and dashes.
-     * @param matches          The list that matching words should be added to.
-     * @param numMatchesToFind The max number of matching words to find before returning.
+     * @param weightedDictionary The weighted dictionary to search.
+     * @param input              A string consisting of only dots and dashes.
+     * @param matches            The list that matching words should be added to.
+     * @param previousWords      The N previously selected words. This should not be an exhaustive list.
+     *                           Used in determining a word's score.
      */
-    private void searchDictionary(List<MorseDictionaryEntry> dictionary, String input, Set<String> matches, int numMatchesToFind) {
+    private void searchDictionary(WeightedDictionary weightedDictionary, String input, Set<Match> matches, CircularFifoQueue<String> previousWords) {
+        List<MorseDictionaryEntry> dictionary = weightedDictionary.getDictionary();
+
         // Pick a random index in the dictionary to start looking for words that match.
         Random randomGen = new Random();
         int random = randomGen.nextInt(dictionary.size());
+
+        int matchesFromDictionary = 0;
 
         // Loop through the dictionary looking for matching words.
         for (int i = 0; i < dictionary.size(); i++) {
             MorseDictionaryEntry entry = dictionary.get(random);
 
-            if (input.startsWith(entry.getWordWithoutLetterBreaks())) {
-                matches.add(entry.getWord());
+            if (input.startsWith(entry.getMorseNoBreaks())) {
+                final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
+                matches.add(new Match(entry, score));
+                matchesFromDictionary++;
                 // Break early if the requisite number of matches has been found.
-                if (matches.size() >= numMatchesToFind) {
+                if (matchesFromDictionary >= weightedDictionary.getMaxMatchesForDictionary()) {
                     break;
                 }
             }
             random = (random + 1) % dictionary.size();
         }
-    }
-
-    /**
-     * Score a given word so that it can be compared to other matching words.
-     *
-     * @param word          The word to score.
-     * @param previousWords The N previously selected words. This should not be an exhaustive list. If word appears in the
-     *                     previousWords, it will have a negative impact on the score.
-     * @return The word score.
-     */
-    private static int scoreWord(String word, CircularFifoQueue<String> previousWords) {
-        // Some file formates produce long sections of repeating bit patterns, this can result in the exact same word being
-        // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
-        int previousWordPenalty = 0;
-        for (int i = 0; i < previousWords.size(); i++) {
-            previousWordPenalty += word.equals(previousWords.get(i)) ? 1 : 0;
-        }
-        return word.length() - previousWordPenalty;
     }
 
     /**
@@ -459,7 +437,7 @@ public class MornaryService {
      * @param input A string consisting of only dots and dashes.
      * @return A randomly selected letter that matches the start of the input.
      */
-    private String findLetter(String input) {
+    private Match findLetter(String input) {
         Node node = null;
         int maxLength = Math.min(input.length(), this.tree.getMaxDepth());
 
@@ -472,8 +450,57 @@ public class MornaryService {
             // Starting at the current index, Check if the substring with that length is a valid encoding.
             node = this.tree.get(input.substring(0, length));
         }
+        String morse = node.getEncoding().getCode();
+        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse, morse);
 
-        return node.getEncoding().getCode();
+        return new Match(entry, 0);
+    }
+
+    /**
+     * Score a given word so that it can be compared to other matching words.
+     *
+     * @param entry         The word to score.
+     * @param previousWords The N previously selected words. This should not be an exhaustive list. If word appears in the
+     *                      previousWords, it will have a negative impact on the score.
+     * @return The word score.
+     */
+    private static double scoreWord(MorseDictionaryEntry entry, CircularFifoQueue<String> previousWords, double dictionaryMultiplier) {
+        // Some file formats produce long sections of repeating bit patterns, this can result in the exact same word being
+        // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
+        double previousWordMultiplier = 1.0;
+        for (int i = 0; i < previousWords.size(); i++) {
+            previousWordMultiplier -= entry.getEnglish().equals(previousWords.get(i)) ? 0.2 : 0.0;
+        }
+
+        double acronymMultiplier = entry.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
+
+        return entry.getEnglish().replace(" ", "").length() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
+    }
+
+    /**
+     * Write any available contiguous work units from the write buffer to the writer. Checks for a completed work unit in the write
+     * buffer with the current write index as its key. If the work unit is in the buffer, it is removed from the buffer and written
+     * to the writer. The write index is incremented and this processes loops until it runs out of sequential work units to write.
+     *
+     * @param writeBuffer      Buffer containing completed work units.
+     * @param writeIndex       The current write index.
+     * @param writer           The writer to use.
+     * @param totalWorkUnits   Total number of work units in the operation.
+     * @param printingProgress True if progress percentage should be printed to the console.
+     * @return The new write index.
+     */
+    private int writeCompletedWorkUnits(Map<Integer, String> writeBuffer, int writeIndex,
+                                        BufferedWriter writer, long totalWorkUnits, boolean printingProgress) throws IOException {
+        while (writeBuffer.containsKey(writeIndex)) {
+            writer.write(writeBuffer.remove(writeIndex++));
+            if (writeIndex < totalWorkUnits) { // Avoid extra delimiter after final work unit.
+                writer.write(MORSE_CODE_WORD_DELIMITER);
+            }
+            if (printingProgress) {
+                this.printProgress(writeIndex, totalWorkUnits);
+            }
+        }
+        return writeIndex;
     }
 
     /**

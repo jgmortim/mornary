@@ -128,4 +128,6 @@ Given the output from the above example:
 * 5,000 word English Dictionary sourced from https://github.com/MichaelWehar/Public-Domain-Word-Lists/blob/master/5000-more-common.txt
   * public domain
 * Huge English dictionary sourced from https://github.com/dwyl/english-words/blob/master/words_alpha.txt
-  * Copyright infochimps
+  * Unlicense; Copyright infochimps
+* n-gram dictionaries sourced from https://github.com/orgtre/google-books-ngram-frequency
+  * CC BY 3.0; orgtre

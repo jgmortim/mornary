@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,8 +132,7 @@ public class MornaryServiceUnitTest {
 
         this.service.encode(input, null);
 
-        final String actual = outputStreamCaptor.toString();
-        System.out.println(actual);
+        final String actual = outputStreamCaptor.toString(StandardCharsets.UTF_8);
 
         assertTrue(actual.matches("^[.\\- /]+$")); // Only dots, dashes, spaces, and slashes.
 

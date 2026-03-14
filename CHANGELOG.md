@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Now using a weighted dictionary approach for finding Morse code words. Multiple dictionaries can be searched in a 
+  predetermined order looking for valid mappings. Each dictionary has a multiplier that can be applied when scoring 
+  words so that certain dictionaries can be favored over others.
+* Now using n-gram dictionaries to improve logical chaining of words
+* More elaborate word scoring
+  * New scoring factors include the dictionary the word comes from and whether it's an acronym
 * Upgraded Java from version `17` to `21`
 * Upgraded Gradle from version `8.13` to `8.14.3`
 
