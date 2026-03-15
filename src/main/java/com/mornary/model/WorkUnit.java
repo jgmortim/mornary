@@ -12,8 +12,20 @@ import java.util.Arrays;
 @Getter
 public class WorkUnit {
 
+    /**
+     * An array of data. Regardless of the size fo the array, the data will be of length {@link #length}.
+     */
     byte[] data;
+
+    /**
+     * The length of the data in {@link #data}
+     */
     int length;
+
+    /**
+     * The index of this work unit in the overarching operation. Work units are processed asynchronously, the index is needed to
+     * reassemble the outputs in the right order.
+     */
     int index;
 
     /**
@@ -21,8 +33,8 @@ public class WorkUnit {
      *
      * @param data   An array of data to be processed by the work unit.
      * @param length The length of the data in the array, regardless of teh size of the array.
-     * @param index  The index of this work unit in the operation. Work units are processed asynchronously, the index is needed to
-     *               reassemble the outputs in the right order.
+     * @param index  The index of this work unit in the overarching operation. Work units are processed asynchronously, the index
+     *               is needed to reassemble the outputs in the right order.
      */
     public WorkUnit(byte[] data, int length, int index) {
         this.data = Arrays.copyOf(data, length);
