@@ -6,23 +6,30 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- *
+ * A dictionary and the weight multiplier to apply to the score of matching words found in the dictionary.
  *
  * @author John Mortimore
  */
 @Getter
 public class WeightedDictionary {
 
-   public WeightedDictionary(String filename, int maxMatchesForDictionary, double scoreMultiplier) {
-      this.filename = filename;
-      this.maxMatchesForDictionary = maxMatchesForDictionary;
-      this.scoreMultiplier = scoreMultiplier;
-   }
+    /**
+     * Constructs a new weighted dictionary.
+     *
+     * @param filename                The name of the file containing the raw dictionary.
+     * @param maxMatchesForDictionary Max number of matches to find while searching the dictionary
+     * @param scoreMultiplier         The multiplier to apply to the score of words found in this dictionary.
+     */
+    public WeightedDictionary(String filename, int maxMatchesForDictionary, double scoreMultiplier) {
+        this.filename = filename;
+        this.maxMatchesForDictionary = maxMatchesForDictionary;
+        this.scoreMultiplier = scoreMultiplier;
+    }
 
-   private final String filename;
-   private final double scoreMultiplier;
-   private final int maxMatchesForDictionary;
+    private final String filename;
+    private final double scoreMultiplier;
+    private final int maxMatchesForDictionary;
 
-   @Setter
-   private List<MorseDictionaryEntry> dictionary;
+    @Setter
+    private List<MorseDictionaryEntry> dictionary;
 }
