@@ -23,14 +23,18 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class EncodeServiceUnitTest {
 
-    EncodeService service;
+    private static final EncodeService SERVICE;
+
+    static {
+        try {
+            SERVICE = new EncodeService(1024, 10);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
-
-    public EncodeServiceUnitTest() throws IOException {
-        service = new EncodeService(1024, 10);
-    }
 
     @BeforeEach
     public void setUp() {
@@ -52,7 +56,7 @@ public class EncodeServiceUnitTest {
         final String expectedWithoutBreaks =
                 ".-..-....--..-.-.--.--...--.--...--.----..-......-.-.---.--.----.---..-..--.--...--..-....-....-";
 
-        this.service.encode(input, null);
+        SERVICE.encode(input, null);
 
         final String actual = outputStreamCaptor.toString();
 
@@ -73,7 +77,7 @@ public class EncodeServiceUnitTest {
 
         final File output = new File("testOut.txt");
 
-        this.service.encode(input, output);
+        SERVICE.encode(input, output);
 
         final String outputFileContents = new String(Files.readAllBytes(output.toPath()));
 
@@ -101,7 +105,7 @@ public class EncodeServiceUnitTest {
                 ".---..--..-......--.----.---.--..--..-.-.---..-...-......---.-...--.-....--..-.-..-......--.--.." +
                 ".--....-.----.-..----..-..-......--..-...--.----.--..---..-.---.";
 
-        this.service.encode(input, null);
+        SERVICE.encode(input, null);
 
         final String actual = outputStreamCaptor.toString(StandardCharsets.UTF_8);
 
@@ -125,7 +129,7 @@ public class EncodeServiceUnitTest {
 
         final File output = new File("testOut.txt");
 
-        this.service.encode(input, output);
+        SERVICE.encode(input, output);
 
         final String outputFileContents = new String(Files.readAllBytes(output.toPath()));
 

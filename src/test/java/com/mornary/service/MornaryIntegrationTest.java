@@ -25,15 +25,19 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class MornaryIntegrationTest {
 
-    EncodeService encodeService;
-    DecodeService decodeService;
+    private static final EncodeService ENCODE_SERVICE;
+    private static final DecodeService DECODE_SERVICE;
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
 
-    public MornaryIntegrationTest() throws IOException {
-        this.encodeService = new EncodeService(1024, 10);
-        this.decodeService = new DecodeService(1024);
+    static {
+        try {
+            ENCODE_SERVICE = new EncodeService(1024, 10);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        DECODE_SERVICE = new DecodeService(1024);
     }
 
     @BeforeEach
@@ -58,8 +62,8 @@ public class MornaryIntegrationTest {
         final File outputEncode = new File("testEncode.txt");
         final File outputDecode = new File("testDecode.txt");
 
-        this.encodeService.encode(input, outputEncode);
-        this.decodeService.decode(outputEncode, outputDecode);
+        ENCODE_SERVICE.encode(input, outputEncode);
+        DECODE_SERVICE.decode(outputEncode, outputDecode);
 
         assertTrue(FileUtils.contentEquals(input, outputDecode));
 

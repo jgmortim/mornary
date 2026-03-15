@@ -21,14 +21,10 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class DecodeServiceUnitTest {
 
-    DecodeService service;
+    private static final DecodeService SERVICE = new DecodeService(1024);
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
-
-    public DecodeServiceUnitTest() throws IOException {
-        service = new DecodeService(1024);
-    }
 
     @BeforeEach
     public void setUp() {
@@ -48,7 +44,7 @@ public class DecodeServiceUnitTest {
                              " - -- . -- .- / --- .-- -. . -.. / -- .- -.. .-- . . -.. / .. -. ... -";
         final String expected = "Hello World!";
 
-        this.service.decode(input, null);
+        SERVICE.decode(input, null);
 
         assertEquals(expected, outputStreamCaptor.toString());
     }
@@ -60,7 +56,7 @@ public class DecodeServiceUnitTest {
         final String expected = "Hello World!";
         final File output = new File("testOut.txt");
 
-        this.service.decode(input, output);
+        SERVICE.decode(input, output);
 
         String outputFileContents = new String(Files.readAllBytes(output.toPath()));
 
@@ -79,7 +75,7 @@ public class DecodeServiceUnitTest {
 
         final String expected = "The quick brown fox jumps over the lazy dog.";
 
-        this.service.decode(input, null);
+        SERVICE.decode(input, null);
 
         assertEquals(expected, outputStreamCaptor.toString());
     }
@@ -92,7 +88,7 @@ public class DecodeServiceUnitTest {
 
         final File output = new File("testOut.txt");
 
-        this.service.decode(input, output);
+        SERVICE.decode(input, output);
 
         String outputFileContents = new String(Files.readAllBytes(output.toPath()));
 
