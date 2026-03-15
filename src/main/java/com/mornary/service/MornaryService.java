@@ -4,6 +4,7 @@ import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mornary.exception.NotTextException;
 import com.mornary.model.BinaryTree;
+import com.mornary.model.OperationSize;
 import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
 import com.mornary.model.IndexedResult;
@@ -54,15 +55,27 @@ public class MornaryService {
 
     private final BinaryTree tree;
 
-    static final List<WeightedDictionary> WEIGHTED_DICTIONARIES = List.of(
-        new WeightedDictionary("/5grams_english.txt", 20, 1.5),
-        new WeightedDictionary("/4grams_english.txt", 20, 1.1),
-        new WeightedDictionary("/English5000.txt", 30, 1.0),    // Top 5000 common English words
-        new WeightedDictionary("/3grams_english.txt", 20, 1.0),
-        new WeightedDictionary("/2grams_english.txt", 20, .9),  // 5000 English 2grams
-        new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .8) // Hugh English dictionary
+    private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 20, 1.5);
+    private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 20, 1.1);
+    private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 30, 1.0);    // Top 5000 common English words
+    private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 20, 1.0);
+    private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", 20, .9);  // 5000 English 2grams
+    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .8); // Hugh English dictionary
+
+    static final List<WeightedDictionary> DICTIONARIES = List.of(
+        DICT_FIVE_GRAM,
+        DICT_FOUR_GRAM,
+        DICT_COMMON,
+        DICT_THREE_GRAM,
+        DICT_TWO_GRAM,
+        DICT_RARE
     );
-    static final int NUM_MATCHES_TO_FIND = 50;
+
+    static final List<WeightedDictionary> DICTIONARIES_REDUCED_SET = List.of(
+        DICT_COMMON,
+        DICT_TWO_GRAM,
+        DICT_RARE
+    );
 
     static final MorseDictionaryEntry EMPTY_ENTRY = new MorseDictionaryEntry("", "", "");
 
@@ -92,7 +105,7 @@ public class MornaryService {
         }
 
         // Load in dictionary files.
-        for (WeightedDictionary weightedDictionary : WEIGHTED_DICTIONARIES) {
+        for (WeightedDictionary weightedDictionary : Set.of(DICT_FIVE_GRAM, DICT_FOUR_GRAM, DICT_COMMON, DICT_THREE_GRAM, DICT_TWO_GRAM, DICT_RARE)) {
             try (
                 InputStream is = getClass().getResourceAsStream(weightedDictionary.getFilename())
             ) {
@@ -133,7 +146,7 @@ public class MornaryService {
 
         WorkUnit workUnit = new WorkUnit(data, data.length, 0);
 
-        String encodedWorkUnit = this.encodeWorkUnit(workUnit);
+        String encodedWorkUnit = this.encodeWorkUnit(workUnit, OperationSize.TINY);
 
         try (BufferedWriter writer = OutputUtility.createWriter(output)) {
             writer.write(encodedWorkUnit);
@@ -196,6 +209,7 @@ public class MornaryService {
 
         final long fileSize = input.length();
         final long totalWorkUnits = (long) Math.ceil((double) fileSize / this.workUnitSize);
+        final OperationSize operationSize = OperationSize.getOperationSize(totalWorkUnits);
         final boolean printingProgress = output != null; // Progress updates are printed to the console only when output is written to a file.
 
         final int actualNumberOfThreads = Math.toIntExact(Math.min(totalWorkUnits, this.threadPoolSize));
@@ -226,7 +240,7 @@ public class MornaryService {
                 WorkUnit workUnit = new WorkUnit(readBuffer, readLength, readIndex++);
 
                 completionService.submit(() -> { // Submit the work unit.
-                    String encodedWorkUnit = encodeWorkUnit(workUnit);
+                    String encodedWorkUnit = encodeWorkUnit(workUnit, operationSize);
                     return new IndexedResult<>(workUnit.getIndex(), encodedWorkUnit);
                 });
 
@@ -335,14 +349,14 @@ public class MornaryService {
      * @param workUnit A single work unit to be encoded into Morse.
      * @return The encoded work unit.
      */
-    private String encodeWorkUnit(WorkUnit workUnit) {
+    private String encodeWorkUnit(WorkUnit workUnit, OperationSize operationSize) {
         StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
         // Convert the work unit to a binary string and find an appropriate morse code mapping.
         String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit.getData(), workUnit.getLength());
         CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
         while (!binaryString.isEmpty()) {
-            MorseDictionaryEntry entry = findWord(binaryString, previousWords, NUM_MATCHES_TO_FIND);
+            MorseDictionaryEntry entry = findWord(binaryString, previousWords, operationSize);
             morseWords.add(entry.morse());
             binaryString = binaryString.substring(entry.morseNoBreaks().length());
             previousWords.add(entry.english());
@@ -356,30 +370,28 @@ public class MornaryService {
      * For example, if the input started with ".--", that could match the word "at" (which is ".- -" in morse).
      * In which case, the response would be ".- -".
      * <p>
-     * Helper method for {@link #encodeWorkUnit(WorkUnit)}.
+     * Helper method for {@link #encodeWorkUnit(WorkUnit, OperationSize)}.
      *
-     * @param input                     A string consisting of only dots and dashes.
-     * @param previousWords             The N previously selected words. This should not be an exhaustive list.
-     *                                  Used in determining a word's score.
-     * @param numMatchesBeforeSelection The number of matching words to find before selecting one. A large value will
-     *                                  result in a better selection, but will result in worse performance.
+     * @param input         A string consisting of only dots and dashes.
+     * @param previousWords The N previously selected words. This should not be an exhaustive list.
+     *                      Used in determining a word's score.
+     * @param operationSize The size of the overarching operation.
      * @return A word that matches the start of the input, but with spaces at letter breaks.
      */
-    private MorseDictionaryEntry findWord(String input, CircularFifoQueue<String> previousWords, int numMatchesBeforeSelection) {
-        if (numMatchesBeforeSelection <= 0) {
-            throw new IllegalArgumentException(
-                    "numMatchesBeforeSelection [" + numMatchesBeforeSelection + "]  must be greater than 0"
-            );
-        }
+    private MorseDictionaryEntry findWord(String input, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
         if (input == null || input.isEmpty()) {
             return EMPTY_ENTRY;
         }
 
         final Set<Match> matchingWords = new HashSet<>();
 
-        for (WeightedDictionary weightedDictionary : WEIGHTED_DICTIONARIES) {
-            searchDictionary(weightedDictionary, input, matchingWords, previousWords);
-            if (matchingWords.size() >= NUM_MATCHES_TO_FIND) {
+        final List<WeightedDictionary> dictionaries = operationSize.usesReducedDictionarySet()
+            ? DICTIONARIES_REDUCED_SET
+            : DICTIONARIES;
+
+        for (WeightedDictionary weightedDictionary : dictionaries) {
+            searchDictionary(weightedDictionary, input, matchingWords, previousWords, operationSize);
+            if (matchingWords.size() >= operationSize.matchTarget) {
                 break;
             }
         }
@@ -395,15 +407,16 @@ public class MornaryService {
     /**
      * Searches a weighted dictionary for words that match the start of (or the entire) input and adds them to the set of matches.
      * <p>
-     * Helper method for {@link #findWord(String, CircularFifoQueue, int)}.
+     * Helper method for {@link #findWord(String, CircularFifoQueue, OperationSize)}.
      *
      * @param weightedDictionary The weighted dictionary to search.
      * @param input              A string consisting of only dots and dashes.
      * @param matches            The list that matching words should be added to.
      * @param previousWords      The N previously selected words. This should not be an exhaustive list.
      *                           Used in determining a word's score.
+     * @param operationSize      The size of the over arching operation.
      */
-    private void searchDictionary(WeightedDictionary weightedDictionary, String input, Set<Match> matches, CircularFifoQueue<String> previousWords) {
+    private void searchDictionary(WeightedDictionary weightedDictionary, String input, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
         List<MorseDictionaryEntry> dictionary = weightedDictionary.getDictionary();
 
         // Pick a random index in the dictionary to start looking for words that match.
@@ -421,7 +434,8 @@ public class MornaryService {
                 matches.add(new Match(entry, score));
                 matchesFromDictionary++;
                 // Break early if the requisite number of matches has been found.
-                if (matchesFromDictionary >= weightedDictionary.getMaxMatchesForDictionary()) {
+                if (matchesFromDictionary >= weightedDictionary.getMaxMatchesForDictionary()
+                    || matches.size() >= operationSize.matchTarget) {
                     break;
                 }
             }

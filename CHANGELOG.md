@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   predetermined order looking for valid mappings. Each dictionary has a multiplier that can be applied when scoring 
   words so that certain dictionaries can be favored over others.
 * Now using n-gram dictionaries to improve logical chaining of words
+* Number of "matching word to find before selection" now scales with the number of work units
 * More elaborate word scoring
   * New scoring factors include the dictionary the word comes from and whether it's an acronym
 * Upgraded Java from version `17` to `21`
