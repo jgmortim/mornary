@@ -4,6 +4,8 @@ import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mornary.model.BinaryTree;
 import com.mornary.model.BitReader;
+import com.mornary.model.MorseTrie;
+import com.mornary.model.MorseTrieNode;
 import com.mornary.model.OperationSize;
 import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
@@ -28,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -39,7 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Mornary encoding service.
@@ -108,16 +108,14 @@ public class EncodeService {
                     throw new RuntimeException("Dictionary not found: " +  weightedDictionary.getFilename());
                 }
 
-                weightedDictionary.setDictionary(
-                    new BufferedReader(new InputStreamReader(is))
-                        .lines()
-                        .map(word -> {
-                            String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
-                            return new MorseDictionaryEntry(word, morse);
-                        })
-                        .distinct()
-                        .collect(Collectors.toList())
-                );
+                new BufferedReader(new InputStreamReader(is))
+                    .lines()
+                    .map(word -> {
+                        String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
+                        return new MorseDictionaryEntry(word, morse);
+                    })
+                    .distinct()
+                    .forEach(weightedDictionary.getTrieDictionary()::insert);
 
             } catch (IOException e) {
                 throw new RuntimeException("Failed to load dictionary", e);
@@ -316,57 +314,26 @@ public class EncodeService {
      * @param operationSize      The size of the over arching operation.
      */
     private void searchDictionary(WeightedDictionary weightedDictionary, BitReader bitReader, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
-        List<MorseDictionaryEntry> dictionary = weightedDictionary.getDictionary();
-
-        // Pick a random index in the dictionary to start looking for words that match.
-        Random randomGen = new Random();
-        int random = randomGen.nextInt(dictionary.size());
-
+        MorseTrie trie = weightedDictionary.getTrieDictionary();
+        MorseTrieNode node = trie.root();
+        int maxDepth = bitReader.remainingBits();
         int matchesFromDictionary = 0;
-
-        // Loop through the dictionary looking for matching words.
-        for (int i = 0; i < dictionary.size(); i++) {
-            MorseDictionaryEntry entry = dictionary.get(random);
-
-            if (isMatchingWord(bitReader, entry)) {
-                final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
-                matches.add(new Match(entry, score));
-                matchesFromDictionary++;
-                // Break early if the requisite number of matches has been found.
-                if (matchesFromDictionary >= weightedDictionary.getMaxMatchesForDictionary()
-                    || matches.size() >= operationSize.matchTarget) {
-                    break;
-                }
+                for (int i = 0; i < maxDepth; i++) {
+            // Break early if we reach a leaf or the requisite number of matches has been found.
+            if (node == null || matchesFromDictionary >= operationSize.matchTarget) {
+                break;
             }
-            random = (random + 1) % dictionary.size();
-        }
-    }
-
-    /**
-     * Checks if the given word matches the data with the same length at the current position in the bit reader.
-     *
-     * @param bitReader Bit reader containing the input data.
-     * @param word      The word to compare to.
-     * @return True if the given word is a match.
-     */
-    private boolean isMatchingWord(BitReader bitReader, MorseDictionaryEntry word) {
-        if (bitReader.remainingBits() < word.getBitLength()) {
-            return false;
-        }
-
-        long pattern = word.getBitPattern();
-
-        for (int i = 0; i < word.getBitLength(); i++) {
-
-            int expected = (int)((pattern >> (word.getBitLength() - i - 1)) & 1);
-            int actual = bitReader.getBit(i);
-
-            if (expected != actual) {
-                return false;
+            if (node.entries != null && !node.entries.isEmpty()) {
+                node.entries.forEach(entry -> {
+                    final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
+                    matches.add(new Match(entry, score));
+                });
+                matchesFromDictionary += node.entries.size();
             }
-        }
 
-        return true;
+            int bit = bitReader.getBit(i);
+            node = (bit == 0) ? node.dot : node.dash;
+        }
     }
 
     /**

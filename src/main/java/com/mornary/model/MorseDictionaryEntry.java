@@ -9,10 +9,35 @@ import lombok.Getter;
  */
 @Getter
 public final class MorseDictionaryEntry {
+
+    /**
+     * The word in English.
+     */
     private final String english;
+
+    /**
+     * The word in standard Morse code.
+     */
     private final String morse;
+
+    /**
+     * The word in standard Morse code with letter and word breaks removed.
+     */
+    private final String morsePattern;
+
+    /**
+     * The bit pattern equivalent to {@link #morsePattern}. 0s for dots, 1s for dashes. Stored as a long.
+     */
     private final long bitPattern;
+
+    /**
+     * The length of the {@link #bitPattern}.
+     */
     private final int bitLength;
+
+    /**
+     * The number of letters in the {@link #english} word.
+     */
     private final int numberOfLetters;
 
     /**
@@ -27,12 +52,12 @@ public final class MorseDictionaryEntry {
 
         this.numberOfLetters = english.replaceAll(" ", "").length();
 
-        final String morseNoBreaks = morse.replace(" ", "").replace("/", "");
+        this.morsePattern = morse.replace(" ", "").replace("/", "");
 
         long bits = 0;
         int length = 0;
 
-        for (char c : morseNoBreaks.toCharArray()) {
+        for (char c : morsePattern.toCharArray()) {
             bits <<= 1;
             if (c == '-') bits |= 1;
             length++;

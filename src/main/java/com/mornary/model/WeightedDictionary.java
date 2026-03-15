@@ -1,9 +1,6 @@
 package com.mornary.model;
 
 import lombok.Getter;
-import lombok.Setter;
-
-import java.util.List;
 
 /**
  * A dictionary and the weight multiplier to apply to the score of matching words found in the dictionary.
@@ -12,6 +9,13 @@ import java.util.List;
  */
 @Getter
 public class WeightedDictionary {
+
+
+    private final String filename;
+    private final double scoreMultiplier;
+    private final int maxMatchesForDictionary;
+
+    private final MorseTrie trieDictionary = new MorseTrie();
 
     /**
      * Constructs a new weighted dictionary.
@@ -25,11 +29,4 @@ public class WeightedDictionary {
         this.maxMatchesForDictionary = maxMatchesForDictionary;
         this.scoreMultiplier = scoreMultiplier;
     }
-
-    private final String filename;
-    private final double scoreMultiplier;
-    private final int maxMatchesForDictionary;
-
-    @Setter
-    private List<MorseDictionaryEntry> dictionary;
 }
