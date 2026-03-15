@@ -1,16 +1,12 @@
 package com.mornary.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 /**
  * Represents a matching word from a Morse dictionary and the score of the word.
  *
+ * @param entry The matching entry from a dictionary.
+ * @param score The score of the match.
+ *
  * @author John Mortimore
  */
-@AllArgsConstructor
-@Getter
-public class Match {
-    MorseDictionaryEntry entry;
-    double score;
+public record Match(MorseDictionaryEntry entry, double score) {
 }

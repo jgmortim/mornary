@@ -385,11 +385,11 @@ public class MornaryService {
         }
 
         return matchingWords.stream()
-            .max(Comparator.comparingDouble(word -> ((Match) word).getScore())
+            .max(Comparator.comparingDouble(word -> ((Match) word).score())
                 .thenComparing(x -> ThreadLocalRandom.current().nextInt())
             )
             .orElse(findLetter(input)) // Find a matching letter if there were no matching words.
-            .getEntry();
+            .entry();
     }
 
     /**
