@@ -17,19 +17,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Test class for {@link MornaryService}.
+ * Test class for {@link EncodeService}.
  *
  * @author John Mortimore
  */
-public class MornaryServiceUnitTest {
+public class EncodeServiceUnitTest {
 
-    MornaryService service;
+    EncodeService service;
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
 
-    public MornaryServiceUnitTest() throws IOException {
-        service = new MornaryService(1024, 10);
+    public EncodeServiceUnitTest() throws IOException {
+        service = new EncodeService(1024, 10);
     }
 
     @BeforeEach
@@ -88,35 +88,6 @@ public class MornaryServiceUnitTest {
         }
     }
 
-    @Test
-    public void decodeText_noOutputFile_correctOutputPrintedToConsole() throws IOException {
-        final String input = ".-. . -.. . . -- . .-. / - . -- .--. . .- -. / --. .. --. --- - / . .-.. . ...- . -. /" +
-                             " - -- . -- .- / --- .-- -. . -.. / -- .- -.. .-- . . -.. / .. -. ... -";
-        final String expected = "Hello World!";
-
-        this.service.decode(input, null);
-
-        assertEquals(expected, outputStreamCaptor.toString());
-    }
-
-    @Test
-    public void decodeText_outputFile_correctOutputWrittenToFile() throws IOException {
-        final String input = ".-. . -.. . . -- . .-. / - . -- .--. . .- -. / --. .. --. --- - / . .-.. . ...- . -. /" +
-                             " - -- . -- .- / --- .-- -. . -.. / -- .- -.. .-- . . -.. / .. -. ... -";
-        final String expected = "Hello World!";
-        final File output = new File("testOut.txt");
-
-        this.service.decode(input, output);
-
-        String outputFileContents = new String(Files.readAllBytes(output.toPath()));
-
-        assertEquals(expected, outputFileContents);
-
-        if (!output.delete()) { //delete the output file after test runs
-            fail("Output file " + output.getName() + " could not be deleted after test completion");
-        }
-    }
-
     /* File Input Methods - Small Text Payload */
 
     @Test
@@ -163,36 +134,6 @@ public class MornaryServiceUnitTest {
         final String actualWithoutBreaks = outputFileContents.replace(" ", "").replace("/", "");
 
         assertEquals(expectedWithoutBreaks, actualWithoutBreaks);
-
-        if (!output.delete()) { //delete the output file after test runs
-            fail("Output file " + output.getName() + " could not be deleted after test completion");
-        }
-    }
-
-    @Test
-    public void decodeTxtFile_noOutputFile_correctOutputPrintedToConsole() throws IOException, URISyntaxException {
-        final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
-
-        final String expected = "The quick brown fox jumps over the lazy dog.";
-
-        this.service.decode(input, null);
-
-        assertEquals(expected, outputStreamCaptor.toString());
-    }
-
-    @Test
-    public void decodeTxtFile_outputFile_correctOutputWrittenToFile() throws IOException, URISyntaxException {
-        final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
-
-        final String expected = "The quick brown fox jumps over the lazy dog.";
-
-        final File output = new File("testOut.txt");
-
-        this.service.decode(input, output);
-
-        String outputFileContents = new String(Files.readAllBytes(output.toPath()));
-
-        assertEquals(expected, outputFileContents);
 
         if (!output.delete()) { //delete the output file after test runs
             fail("Output file " + output.getName() + " could not be deleted after test completion");

@@ -2,7 +2,8 @@ package com.mornary;
 
 import com.mornary.converter.PositiveIntConverter;
 import com.mornary.configuration.ShortErrorMessageHandler;
-import com.mornary.service.MornaryService;
+import com.mornary.service.DecodeService;
+import com.mornary.service.EncodeService;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -78,16 +79,17 @@ public class Mornary implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        MornaryService service = new MornaryService(1024, this.numThreads);
+        EncodeService encodeService = new EncodeService(1024, this.numThreads);
+        DecodeService decodeService = new DecodeService(1024);
 
         if (this.operation.encodeText != null) {
-            service.encode(this.operation.encodeText, this.outputFile);
+            encodeService.encode(this.operation.encodeText, this.outputFile);
         } else if (this.operation.decodeText != null) {
-            service.decode(this.operation.decodeText, this.outputFile);
+            decodeService.decode(this.operation.decodeText, this.outputFile);
         } else if (this.operation.encodeFile != null) {
-            service.encode(this.operation.encodeFile, this.outputFile);
+            encodeService.encode(this.operation.encodeFile, this.outputFile);
         } else if (this.operation.decodeFile != null) {
-            service.decode(this.operation.decodeFile, this.outputFile);
+            decodeService.decode(this.operation.decodeFile, this.outputFile);
         }
 
         return 0;

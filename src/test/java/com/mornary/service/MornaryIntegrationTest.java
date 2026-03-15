@@ -16,22 +16,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Integration test class for {@link MornaryService}.
+ * Integration test class for {@link EncodeService} and {@link DecodeService}.
  * <p>
- * These tests pipe large inputs through both the encode and decode methods to ensure that the two methods
+ * These tests pipe large inputs through both the encode and decode service methods to ensure that the two methods
  * are perfect inverses of each other.
  *
  * @author John Mortimore
  */
-public class MornaryServiceIntegrationTest {
+public class MornaryIntegrationTest {
 
-    MornaryService service;
+    EncodeService encodeService;
+    DecodeService decodeService;
 
     private final PrintStream standardOut = System.out;
     private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
 
-    public MornaryServiceIntegrationTest() throws IOException {
-        service = new MornaryService(1024, 10);
+    public MornaryIntegrationTest() throws IOException {
+        this.encodeService = new EncodeService(1024, 10);
+        this.decodeService = new DecodeService(1024);
     }
 
     @BeforeEach
@@ -56,8 +58,8 @@ public class MornaryServiceIntegrationTest {
         final File outputEncode = new File("testEncode.txt");
         final File outputDecode = new File("testDecode.txt");
 
-        this.service.encode(input, outputEncode);
-        this.service.decode(outputEncode, outputDecode);
+        this.encodeService.encode(input, outputEncode);
+        this.decodeService.decode(outputEncode, outputDecode);
 
         assertTrue(FileUtils.contentEquals(input, outputDecode));
 
