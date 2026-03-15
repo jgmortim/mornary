@@ -328,7 +328,7 @@ public class EncodeService {
         for (int i = 0; i < dictionary.size(); i++) {
             MorseDictionaryEntry entry = dictionary.get(random);
 
-            if (matchesPrefix(bitReader, entry)) {
+            if (isMatchingWord(bitReader, entry)) {
                 final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
                 matches.add(new Match(entry, score));
                 matchesFromDictionary++;
@@ -343,13 +343,13 @@ public class EncodeService {
     }
 
     /**
-     * Checks if the given word matches the prefix with the same length at the current position in the bit reader.
+     * Checks if the given word matches the data with the same length at the current position in the bit reader.
      *
      * @param bitReader Bit reader containing the input data.
      * @param word      The word to compare to.
      * @return True if the given word is a match.
      */
-    private boolean matchesPrefix(BitReader bitReader, MorseDictionaryEntry word) {
+    private boolean isMatchingWord(BitReader bitReader, MorseDictionaryEntry word) {
         if (bitReader.remainingBits() < word.getBitLength()) {
             return false;
         }
