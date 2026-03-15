@@ -79,17 +79,25 @@ public class Mornary implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        EncodeService encodeService = new EncodeService(1024, this.numThreads);
-        DecodeService decodeService = new DecodeService(1024);
+        if (this.operation.encodeText != null || this.operation.encodeFile != null) { // Encoding.
 
-        if (this.operation.encodeText != null) {
-            encodeService.encode(this.operation.encodeText, this.outputFile);
-        } else if (this.operation.decodeText != null) {
-            decodeService.decode(this.operation.decodeText, this.outputFile);
-        } else if (this.operation.encodeFile != null) {
-            encodeService.encode(this.operation.encodeFile, this.outputFile);
-        } else if (this.operation.decodeFile != null) {
-            decodeService.decode(this.operation.decodeFile, this.outputFile);
+            EncodeService encodeService = new EncodeService(1024, this.numThreads);
+
+            if (this.operation.encodeText != null) {
+                encodeService.encode(this.operation.encodeText, this.outputFile);
+            } else {
+                encodeService.encode(this.operation.encodeFile, this.outputFile);
+            }
+
+        } else if (this.operation.decodeText != null || this.operation.decodeFile != null) { // Decoding.
+
+            DecodeService decodeService = new DecodeService(1024);
+
+            if (this.operation.decodeText != null) {
+                decodeService.decode(this.operation.decodeText, this.outputFile);
+            } else {
+                decodeService.decode(this.operation.decodeFile, this.outputFile);
+            }
         }
 
         return 0;
