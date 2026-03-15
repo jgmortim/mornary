@@ -343,9 +343,9 @@ public class MornaryService {
         CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
         while (!binaryString.isEmpty()) {
             MorseDictionaryEntry entry = findWord(binaryString, previousWords, NUM_MATCHES_TO_FIND);
-            morseWords.add(entry.getMorse());
-            binaryString = binaryString.substring(entry.getMorseNoBreaks().length());
-            previousWords.add(entry.getEnglish());
+            morseWords.add(entry.morse());
+            binaryString = binaryString.substring(entry.morseNoBreaks().length());
+            previousWords.add(entry.english());
         }
         return morseWords.toString();
     }
@@ -416,7 +416,7 @@ public class MornaryService {
         for (int i = 0; i < dictionary.size(); i++) {
             MorseDictionaryEntry entry = dictionary.get(random);
 
-            if (input.startsWith(entry.getMorseNoBreaks())) {
+            if (input.startsWith(entry.morseNoBreaks())) {
                 final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
                 matches.add(new Match(entry, score));
                 matchesFromDictionary++;
@@ -469,12 +469,12 @@ public class MornaryService {
         // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
         double previousWordMultiplier = 1.0;
         for (int i = 0; i < previousWords.size(); i++) {
-            previousWordMultiplier -= entry.getEnglish().equals(previousWords.get(i)) ? 0.2 : 0.0;
+            previousWordMultiplier -= entry.english().equals(previousWords.get(i)) ? 0.2 : 0.0;
         }
 
-        double acronymMultiplier = entry.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
+        double acronymMultiplier = entry.english().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
 
-        return entry.getEnglish().replace(" ", "").length() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
+        return entry.english().replace(" ", "").length() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
     }
 
     /**
