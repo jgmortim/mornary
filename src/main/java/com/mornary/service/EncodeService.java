@@ -3,6 +3,7 @@ package com.mornary.service;
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mornary.model.BinaryTree;
+import com.mornary.model.BitReader;
 import com.mornary.model.OperationSize;
 import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
@@ -11,7 +12,6 @@ import com.mornary.model.MorseDictionaryEntry;
 import com.mornary.model.Node;
 import com.mornary.model.Match;
 import com.mornary.model.WorkUnit;
-import com.mornary.utility.BinaryUtilities;
 import com.mornary.utility.OutputUtility;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
@@ -74,8 +74,6 @@ public class EncodeService {
         DICT_RARE
     );
 
-    static final MorseDictionaryEntry EMPTY_ENTRY = new MorseDictionaryEntry("", "", "");
-
     private final int workUnitSize;
     private final int threadPoolSize;
     private final int queueCapacity;
@@ -115,8 +113,7 @@ public class EncodeService {
                         .lines()
                         .map(word -> {
                             String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
-                            String morseNoBreaks = morse.replace(" ", "").replace("/", "");
-                            return new MorseDictionaryEntry(word, morse, morseNoBreaks);
+                            return new MorseDictionaryEntry(word, morse);
                         })
                         .distinct()
                         .collect(Collectors.toList())
@@ -129,7 +126,7 @@ public class EncodeService {
     }
 
     /**
-     * Encodes the given input text as morse code and prints the output to the console.
+     * Encodes the given input text as Morse code and prints the output to the console.
      *
      * @param input  The text to encode.
      * @param output The file to write the Morse code output to. If the file exists, it will be truncated; if it does not exist,
@@ -250,20 +247,21 @@ public class EncodeService {
     /**
      * Encodes a single work unit into Morse code.
      *
-     * @param workUnit A single work unit to be encoded into Morse.
+     * @param workUnit      A single work unit to be encoded into Morse.
+     * @param operationSize The size of the overarching operation. Determines the algorithm used to encode the work unit.
      * @return The encoded work unit.
      */
     private String encodeWorkUnit(WorkUnit workUnit, OperationSize operationSize) {
         StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
-        // Convert the work unit to a binary string and find an appropriate morse code mapping.
-        String binaryString = BinaryUtilities.byteArrayToMorseBinaryString(workUnit.getData(), workUnit.getLength());
-        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);
-        while (!binaryString.isEmpty()) {
-            MorseDictionaryEntry entry = findWord(binaryString, previousWords, operationSize);
-            morseWords.add(entry.morse());
-            binaryString = binaryString.substring(entry.morseNoBreaks().length());
-            previousWords.add(entry.english());
+        BitReader bitReader = new BitReader(workUnit.getData(), workUnit.getLength());
+
+        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);  // Tracks the last 3 selected words for scoring purposes.
+        while (bitReader.hasRemaining()) {
+            MorseDictionaryEntry entry = findWord(bitReader, previousWords, operationSize);
+            morseWords.add(entry.getMorse());
+            bitReader.advance(entry.getBitLength());
+            previousWords.add(entry.getEnglish());
         }
         return morseWords.toString();
     }
@@ -276,16 +274,13 @@ public class EncodeService {
      * <p>
      * Helper method for {@link #encodeWorkUnit(WorkUnit, OperationSize)}.
      *
-     * @param input         A string consisting of only dots and dashes.
+     * @param bitReader     Bit reader containing the input data.
      * @param previousWords The N previously selected words. This should not be an exhaustive list.
      *                      Used in determining a word's score.
      * @param operationSize The size of the overarching operation.
      * @return A word that matches the start of the input, but with spaces at letter breaks.
      */
-    private MorseDictionaryEntry findWord(String input, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
-        if (input == null || input.isEmpty()) {
-            return EMPTY_ENTRY;
-        }
+    private MorseDictionaryEntry findWord(BitReader bitReader, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
 
         final Set<Match> matchingWords = new HashSet<>();
 
@@ -293,34 +288,34 @@ public class EncodeService {
             ? DICTIONARIES_REDUCED_SET
             : DICTIONARIES;
 
-        for (WeightedDictionary weightedDictionary : dictionaries) {
-            searchDictionary(weightedDictionary, input, matchingWords, previousWords, operationSize);
+        for (WeightedDictionary dictionary : dictionaries) {
+            searchDictionary(dictionary, bitReader, matchingWords, previousWords, operationSize);
             if (matchingWords.size() >= operationSize.matchTarget) {
                 break;
             }
         }
 
         return matchingWords.stream()
-            .max(Comparator.comparingDouble(word -> ((Match) word).score())
+            .max(Comparator.comparingDouble(Match::score)
                 .thenComparing(x -> ThreadLocalRandom.current().nextInt())
             )
-            .orElse(findLetter(input)) // Find a matching letter if there were no matching words.
+            .orElse(findLetter(bitReader)) // Find a matching letter if there were no matching words.
             .entry();
     }
 
     /**
      * Searches a weighted dictionary for words that match the start of (or the entire) input and adds them to the set of matches.
      * <p>
-     * Helper method for {@link #findWord(String, CircularFifoQueue, OperationSize)}.
+     * Helper method for {@link #findWord(BitReader, CircularFifoQueue, OperationSize)}.
      *
      * @param weightedDictionary The weighted dictionary to search.
-     * @param input              A string consisting of only dots and dashes.
+     * @param bitReader          Bit reader containing the input data.
      * @param matches            The list that matching words should be added to.
      * @param previousWords      The N previously selected words. This should not be an exhaustive list.
      *                           Used in determining a word's score.
      * @param operationSize      The size of the over arching operation.
      */
-    private void searchDictionary(WeightedDictionary weightedDictionary, String input, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
+    private void searchDictionary(WeightedDictionary weightedDictionary, BitReader bitReader, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
         List<MorseDictionaryEntry> dictionary = weightedDictionary.getDictionary();
 
         // Pick a random index in the dictionary to start looking for words that match.
@@ -333,7 +328,7 @@ public class EncodeService {
         for (int i = 0; i < dictionary.size(); i++) {
             MorseDictionaryEntry entry = dictionary.get(random);
 
-            if (input.startsWith(entry.morseNoBreaks())) {
+            if (matchesPrefix(bitReader, entry)) {
                 final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
                 matches.add(new Match(entry, score));
                 matchesFromDictionary++;
@@ -348,16 +343,43 @@ public class EncodeService {
     }
 
     /**
+     * Checks if the given word matches the prefix with the same length at the current position in the bit reader.
+     *
+     * @param bitReader Bit reader containing the input data.
+     * @param word      The word to compare to.
+     * @return True if the given word is a match.
+     */
+    private boolean matchesPrefix(BitReader bitReader, MorseDictionaryEntry word) {
+        if (bitReader.remainingBits() < word.getBitLength()) {
+            return false;
+        }
+
+        long pattern = word.getBitPattern();
+
+        for (int i = 0; i < word.getBitLength(); i++) {
+
+            int expected = (int)((pattern >> (word.getBitLength() - i - 1)) & 1);
+            int actual = bitReader.getBit(i);
+
+            if (expected != actual) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Randomly finds a single letter in morse code that matches the start of (or the entire) input.
      * <p>
      * For example, if the input was ".--", that could match the letters or E (.), A (.-), or W (.--).
      *
-     * @param input A string consisting of only dots and dashes.
+     * @param bitReader Bit reader containing the input data.
      * @return A randomly selected letter that matches the start of the input.
      */
-    private Match findLetter(String input) {
+    private Match findLetter(BitReader bitReader) {
         Node node = null;
-        int maxLength = Math.min(input.length(), this.tree.getMaxDepth());
+        int maxLength = Math.min(bitReader.remainingBits(), this.tree.getMaxDepth());
 
         // Loop until a valid morse encoding is randomly selected
         while (node == null || node.getEncoding() == null) {
@@ -365,11 +387,19 @@ public class EncodeService {
             // Randomly select a character length for a morse encoded character.
             int length = Math.min(maxLength, 1 + (int) (Math.random() * this.tree.getMaxDepth()));
 
-            // Starting at the current index, Check if the substring with that length is a valid encoding.
-            node = this.tree.get(input.substring(0, length));
+            StringBuilder morseBuilder = new StringBuilder(length);
+
+            for (int i = 0; i < length; i++) {
+                int bit = bitReader.getBit(i);
+                morseBuilder.append(bit == 0 ? '.' : '-');
+            }
+
+            String morsePrefix = morseBuilder.toString();
+
+            node = this.tree.get(morsePrefix);
         }
         String morse = node.getEncoding().getCode();
-        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse, morse);
+        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse);
 
         return new Match(entry, 0);
     }
@@ -387,12 +417,12 @@ public class EncodeService {
         // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
         double previousWordMultiplier = 1.0;
         for (int i = 0; i < previousWords.size(); i++) {
-            previousWordMultiplier -= entry.english().equals(previousWords.get(i)) ? 0.2 : 0.0;
+            previousWordMultiplier -= entry.getEnglish().equals(previousWords.get(i)) ? 0.2 : 0.0;
         }
 
-        double acronymMultiplier = entry.english().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
+        double acronymMultiplier = entry.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
 
-        return entry.english().replace(" ", "").length() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
+        return entry.getNumberOfLetters() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
     }
 
     /**

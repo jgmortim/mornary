@@ -14,29 +14,6 @@ public class BinaryUtilities {
     }
 
     /**
-     * Converts the first "actualSize" byte of a byte array into a Morse binary string. In other words, it's a binary string, except
-     * every 0 is a dot and every 1 is a dash.
-     *
-     * @param data       The byte array.
-     * @param actualSize The actual size of the data in the array, regardless of the capacity of the array.
-     * @return The Morse binary string.
-     */
-    public static String byteArrayToMorseBinaryString(byte[] data, int actualSize) {
-        StringBuilder binary = new StringBuilder(actualSize * 8);
-        for (int i = 0; i < actualSize; i++) {
-            byte b = data[i];
-            // Convert byte to int and mask with 0xFF to handle negative values correctly
-            binary.append(
-                    String.format("%8s", Integer.toBinaryString(b & 0xFF))
-                            .replace(' ', '0')
-                            .replace('0', '.')
-                            .replace('1', '-')
-            );
-        }
-        return binary.toString();
-    }
-
-    /**
      * Converts a string of ones and zeros into the equivalent byte array.
      *
      * @param s The binary string.

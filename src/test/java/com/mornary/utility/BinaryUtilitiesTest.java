@@ -13,39 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class BinaryUtilitiesTest {
 
     @Test
-    void byteArrayToMorseBinaryString_fullLength_correctStringReturned() {
-        final byte[] input = {
-                84, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120, 32, 106, 117,
-                109, 112, 115, 32, 111, 118, 101, 114, 32, 116, 104, 101, 32, 108, 97, 122, 121, 32, 100, 111, 103, 46
-        };
-        final String expected =
-                ".-.-.-...--.-....--..-.-..-......---...-.---.-.-.--.-..-.--...--.--.-.--..-......--...-..---..-." +
-                ".--.----.---.---.--.---...-......--..--..--.----.----.....-......--.-.-..---.-.-.--.--.-.---...." +
-                ".---..--..-......--.----.---.--..--..-.-.---..-...-......---.-...--.-....--..-.-..-......--.--.." +
-                ".--....-.----.-..----..-..-......--..-...--.----.--..---..-.---.";
-
-        final String actual = BinaryUtilities.byteArrayToMorseBinaryString(input, input.length);
-
-        assertEquals(expected, actual);
-
-    }
-
-    @Test
-    void byteArrayToMorseBinaryString_partialLength_correctStringReturned() {
-        final byte[] input = {
-                84, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120, 32, 106, 117,
-                109, 112, 115, 32, 111, 118, 101, 114, 32, 116, 104, 101, 32, 108, 97, 122, 121, 32, 100, 111, 103, 46
-        };
-        final String expected =
-                ".-.-.-...--.-....--..-.-..-......---...-.---.-.-.--.-..-.--...--.--.-.--..-......--...-..---..-." +
-                ".--.----.---.---.--.---...-......--..--..--.----.----.....-......--.-.-..---.-.-.--.--.-.---....";
-
-        final String actual = BinaryUtilities.byteArrayToMorseBinaryString(input, 24);
-
-        assertEquals(expected, actual);
-    }
-
-    @Test
     void binaryStringToByteArray() {
         final String input =
                 "010101000110100001100101001000000111000101110101011010010110001101101011001000000110001001110010" +
