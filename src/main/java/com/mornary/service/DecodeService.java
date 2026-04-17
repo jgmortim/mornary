@@ -19,6 +19,8 @@ public class DecodeService {
 
     private final int workUnitSize;
 
+    private final PrintService printService;
+
     /**
      * Constructs the MornaryService.
      *
@@ -26,6 +28,7 @@ public class DecodeService {
      */
     public DecodeService(int workUnitSize) {
         this.workUnitSize = workUnitSize;
+        this.printService = new PrintService();
     }
 
     /**
@@ -100,7 +103,7 @@ public class DecodeService {
                 writeIndex++;
 
                 if (output != null) { // If using a file output, print progress to console.
-                    this.printProgress(writeIndex, totalWorkUnits);
+                    this.printService.printProgress(writeIndex, totalWorkUnits);
                 }
 
                 binaryStringBuffer = new StringBuilder(binaryStringBuffer.substring(numBitsToWrite));
@@ -134,17 +137,6 @@ public class DecodeService {
             .replace('-', '1')
             .replace(" ", "")
             .replace("/", "");
-    }
-
-    /**
-     * Prints the current progress percentage to the console.
-     *
-     * @param workUnitsWritten The number of completed work units that have been written to the output file.
-     * @param totalWorkUnits   The total number of work units in the operation.
-     */
-    private void printProgress(long workUnitsWritten, long totalWorkUnits) {
-        double progress = 100 * ((double) workUnitsWritten / totalWorkUnits);
-        System.out.printf("\rWork Units Completed: %d of %d (%.2f%%)", workUnitsWritten, totalWorkUnits, progress);
     }
 
 }

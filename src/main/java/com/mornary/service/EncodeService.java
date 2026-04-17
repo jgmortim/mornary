@@ -74,6 +74,8 @@ public class EncodeService {
         DICT_RARE
     );
 
+    private final PrintService printService;
+
     private final int workUnitSize;
     private final int threadPoolSize;
     private final int queueCapacity;
@@ -121,6 +123,8 @@ public class EncodeService {
                 throw new RuntimeException("Failed to load dictionary", e);
             }
         }
+
+        this.printService = new PrintService();
     }
 
     /**
@@ -175,7 +179,6 @@ public class EncodeService {
      *           concerns do not exist, {@link #encode(String, File)} may be used instead as it has less overhead.
      */
     public void encode(File input, File output) throws IOException {
-
         final long fileSize = input.length();
         final long totalWorkUnits = (long) Math.ceil((double) fileSize / this.workUnitSize);
         final OperationSize operationSize = OperationSize.getOperationSize(totalWorkUnits);
@@ -412,21 +415,10 @@ public class EncodeService {
                 writer.write(MORSE_CODE_WORD_DELIMITER);
             }
             if (printingProgress) {
-                this.printProgress(writeIndex, totalWorkUnits);
+                this.printService.printProgress(writeIndex, totalWorkUnits);
             }
         }
         return writeIndex;
-    }
-
-    /**
-     * Prints the current progress percentage to the console.
-     *
-     * @param workUnitsWritten The number of completed work units that have been written to the output file.
-     * @param totalWorkUnits   The total number of work units in the operation.
-     */
-    private void printProgress(long workUnitsWritten, long totalWorkUnits) {
-        double progress = 100 * ((double) workUnitsWritten / totalWorkUnits);
-        System.out.printf("\rWork Units Completed: %d of %d (%.2f%%)", workUnitsWritten, totalWorkUnits, progress);
     }
 
 }

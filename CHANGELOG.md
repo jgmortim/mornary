@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - Upcoming
 
+### Added
+
+* Progress printing now includes time elapsed and estimated time remaining
+
 ### Changed
 
 * Now using a weighted dictionary approach for finding Morse code words. Multiple dictionaries can be searched in a 
@@ -17,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Number of "matching word to find before selection" now scales with the number of work units
 * More elaborate word scoring
   * New scoring factors include the dictionary the word comes from and whether it's an acronym
+* Progress printing limited to no more than one print per second
 * Upgraded Java from version `17` to `21`
 * Upgraded Gradle from version `8.13` to `8.14.3`
 
