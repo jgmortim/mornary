@@ -52,12 +52,12 @@ public class EncodeService {
 
     private final BinaryTree tree;
 
-    private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 20, 1.5);
-    private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 20, 1.1);
-    private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 30, 1.0);    // Top 5000 common English words
-    private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 20, 1.0);
-    private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", 20, .9);  // 5000 English 2grams
-    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .7); // Hugh English dictionary
+    private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 1.5);
+    private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 1.1);
+    private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 1.0);    // Top 5000 common English words
+    private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 1.0);
+    private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", .9);  // 5000 English 2grams
+    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", .7); // Hugh English dictionary
 
     static final List<WeightedDictionary> DICTIONARIES = List.of(
         DICT_FIVE_GRAM,
@@ -106,17 +106,17 @@ public class EncodeService {
 
         for (WeightedDictionary weightedDictionary : dictionaries) {
             try (
-                InputStream is = getClass().getResourceAsStream(weightedDictionary.getFilename())
+                InputStream is = getClass().getResourceAsStream(weightedDictionary.filename())
             ) {
                 if (is == null) {
-                    throw new RuntimeException("Dictionary not found: " +  weightedDictionary.getFilename());
+                    throw new RuntimeException("Dictionary not found: " +  weightedDictionary.filename());
                 }
 
                 new BufferedReader(new InputStreamReader(is))
                     .lines()
                     .map(word -> {
                         String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
-                        return new MorseDictionaryEntry(word, morse, weightedDictionary.getScoreMultiplier());
+                        return new MorseDictionaryEntry(word, morse, weightedDictionary.scoreMultiplier());
                     })
                     .distinct()
                     .forEach(this.morseTrie::insert);
