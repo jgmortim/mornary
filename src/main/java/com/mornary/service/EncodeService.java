@@ -11,7 +11,7 @@ import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
 import com.mornary.model.IndexedResult;
 import com.mornary.model.MorseDictionaryEntry;
-import com.mornary.model.Node;
+import com.mornary.model.EncodingNode;
 import com.mornary.model.Match;
 import com.mornary.model.WorkUnit;
 import com.mornary.utility.OutputUtility;
@@ -316,11 +316,9 @@ public class EncodeService {
             if (node == null || matchingWords.size() >= operationSize.matchTarget) {
                 break;
             }
-            if (node.entries != null && !node.entries.isEmpty()) {
-                node.entries.forEach(entry -> {
-                    final double score = scoreWord(entry, previousWords);
-                    matchingWords.add(new Match(entry, score));
-                });
+            for (MorseDictionaryEntry entry : node.getEntries()) {
+                final double score = scoreWord(entry, previousWords);
+                matchingWords.add(new Match(entry, score));
             }
 
             int bit = workUnit.getBitReader().getBit(i);
