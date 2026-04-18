@@ -1,8 +1,6 @@
 package com.mornary.model;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Node object for {@link MorseTrie}.
@@ -15,12 +13,12 @@ public class MorseTrieNode {
     public MorseTrieNode dash;
 
     /**
-     * The entries. Because the trie can have hundreds of thousands of nodes, it important to be as lazy as possible when creating
-     * this collection. We start it as null. And then change it to a single {@link MorseDictionaryEntry} when the first entry is
+     * The text segments. Because the trie can have hundreds of thousands of nodes, it important to be as lazy as possible when
+     * creating this collection. We start it as null. And then change it to a single {@link TextSegment} when the first entry is
      * encountered. If a second entry is encountered, then we convert it to an array. Most nodes are going to either have 0 or 1
      * entry. So we only want to create arrays when absolutely necessary.
      */
-    private Object entries = null;
+    private Object data = null;
 
     /**
      * Constructs a new node.
@@ -29,38 +27,38 @@ public class MorseTrieNode {
     }
 
     /**
-     * Adds an entry to the node.
+     * Adds a text segment to the node.
      *
-     * @param entry The entry to add.
+     * @param textSegment The text segment to add.
      */
-    public void addEntry(MorseDictionaryEntry entry) {
-        if (entries == null) {
-            // If node has no data, just set the data to be the entry.
-            entries = entry;
-        } else if (entries instanceof MorseDictionaryEntry original) {
-            // If the data is a single entry, convert it to an array and add the new entry.
-            entries = new MorseDictionaryEntry[]{original, entry};
+    public void addTextSegment(TextSegment textSegment) {
+        if (data == null) {
+            // If node has no data, just set the data to be the text segment.
+            data = textSegment;
+        } else if (data instanceof TextSegment original) {
+            // If the data is a single text segment, convert it to an array and add the new text segment.
+            data = new TextSegment[]{original, textSegment};
         } else {
-            // If the data is already an array, grow the array and add the new entry.
-            MorseDictionaryEntry[] originalArray = (MorseDictionaryEntry[]) entries;
-            MorseDictionaryEntry[] newArray = Arrays.copyOf(originalArray, originalArray.length + 1);
-            newArray[originalArray.length] = entry;
-            entries = newArray;
+            // If the data is already an array, grow the array and add the new text segment.
+            TextSegment[] originalArray = (TextSegment[]) data;
+            TextSegment[] newArray = Arrays.copyOf(originalArray, originalArray.length + 1);
+            newArray[originalArray.length] = textSegment;
+            data = newArray;
         }
     }
 
     /**
-     * Retrieves an array of entries at the node.
+     * Retrieves an array of text segments at the node.
      *
-     * @return The array of entries.
+     * @return The array of text segments.
      */
-    public MorseDictionaryEntry[] getEntries() {
-        if (entries instanceof MorseDictionaryEntry entry) {
-            return new MorseDictionaryEntry[]{entry};
-        } else if (entries instanceof MorseDictionaryEntry[] array) {
+    public TextSegment[] getTextSegments() {
+        if (data instanceof TextSegment entry) {
+            return new TextSegment[]{entry};
+        } else if (data instanceof TextSegment[] array) {
             return array;
         } else {
-            return new MorseDictionaryEntry[0];
+            return new TextSegment[0];
         }
     }
 }

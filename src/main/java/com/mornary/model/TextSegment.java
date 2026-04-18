@@ -3,25 +3,25 @@ package com.mornary.model;
 import lombok.Getter;
 
 /**
- * Represents an English word, its Morse encoding, and the corresponding Mornary bit pattern.
+ * Represents a segment of text in English, its Morse encoding, and its corresponding Mornary bit pattern.
  *
  * @author John Mortimore
  */
 @Getter
-public final class MorseDictionaryEntry {
+public final class TextSegment {
 
     /**
-     * The word in English.
+     * The text segment in English.
      */
     private final String english;
 
     /**
-     * The word in standard Morse code.
+     * The text segment in standard Morse code.
      */
     private final String morse;
 
     /**
-     * The word in standard Morse code with letter and word breaks removed.
+     * The text segment in standard Morse code with letter and word breaks removed.
      */
     private final String morsePattern;
 
@@ -36,20 +36,23 @@ public final class MorseDictionaryEntry {
     private final int bitLength;
 
     /**
-     * The number of letters in the {@link #english} word.
+     * The number of letters in the {@link #english} text segment. Spaces are not counted.
      */
     private final int numberOfLetters;
 
+    /**
+     * The score multiplier for this word.
+     */
     private final double scoreMultiplier;
 
     /**
-     * Constructs a new Morse dictionary entry.
+     * Constructs a new Text Segment.
      *
-     * @param english         The English word.
-     * @param morse           The word in Morse code with spaces for letter breaks.
-     * @param scoreMultiplier Score multiplier for this word
+     * @param english         The text in English.
+     * @param morse           The text in Morse code.
+     * @param scoreMultiplier Score multiplier for this text segment.
      */
-    public MorseDictionaryEntry(String english, String morse, double scoreMultiplier) {
+    public TextSegment(String english, String morse, double scoreMultiplier) {
         this.english = english;
         this.morse = morse;
         this.scoreMultiplier = scoreMultiplier;

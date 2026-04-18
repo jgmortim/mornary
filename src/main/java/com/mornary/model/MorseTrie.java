@@ -3,7 +3,7 @@ package com.mornary.model;
 import lombok.Getter;
 
 /**
- * A binary tree implementation based on Morse code. Dots branch left and dashes branch right.
+ * A binary trie implementation based on Morse code. Where the branches are dots and dashes.
  *
  * @author John Mortimore
  */
@@ -11,19 +11,19 @@ import lombok.Getter;
 public class MorseTrie {
 
     /**
-     * The root node of the tree.
+     * The root node of the trie.
      */
     private final MorseTrieNode root = new MorseTrieNode();
 
     /**
-     * Insert a MorseDictionaryEntry into the trie.
+     * Insert a text segment into the trie.
      *
-     * @param entry Morse word with bitPattern and length.
+     * @param textSegment Text segment with bit pattern and length.
      */
-    public void insert(MorseDictionaryEntry entry) {
+    public void insert(TextSegment textSegment) {
         MorseTrieNode node = root;
-        long bits = entry.getBitPattern();
-        int len = entry.getBitLength();
+        long bits = textSegment.getBitPattern();
+        int len = textSegment.getBitLength();
 
         for (int i = len - 1; i >= 0; i--) { // MSB first
             long bit = (bits >> i) & 1;
@@ -40,6 +40,6 @@ public class MorseTrie {
             }
         }
 
-        node.addEntry(entry);
+        node.addTextSegment(textSegment);
     }
 }

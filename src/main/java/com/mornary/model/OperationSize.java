@@ -15,10 +15,6 @@ public enum OperationSize {
         this.matchTarget = matchTarget;
     }
 
-    public boolean usesReducedDictionarySet() {
-        return this.matchTarget >= LARGE.matchTarget;
-    }
-
     public static OperationSize getOperationSize(long numberOfWorkUnits) {
         for (OperationSize size : OperationSize.values()) {
             if (size.maxNumberOfWorkUnits >= numberOfWorkUnits) {

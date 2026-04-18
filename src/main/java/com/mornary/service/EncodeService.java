@@ -10,7 +10,7 @@ import com.mornary.model.OperationSize;
 import com.mornary.model.WeightedDictionary;
 import com.mornary.model.Encoding;
 import com.mornary.model.IndexedResult;
-import com.mornary.model.MorseDictionaryEntry;
+import com.mornary.model.TextSegment;
 import com.mornary.model.EncodingNode;
 import com.mornary.model.Match;
 import com.mornary.model.WorkUnit;
@@ -114,9 +114,9 @@ public class EncodeService {
 
                 new BufferedReader(new InputStreamReader(is))
                     .lines()
-                    .map(word -> {
-                        String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
-                        return new MorseDictionaryEntry(word, morse, weightedDictionary.scoreMultiplier());
+                    .map(englishText -> {
+                        String morse = MorseCode.convertToMorseCode(englishText).replace("  ", " / ");
+                        return new TextSegment(englishText, morse, weightedDictionary.scoreMultiplier());
                     })
                     .distinct()
                     .forEach(this.morseTrie::insert);
@@ -255,76 +255,78 @@ public class EncodeService {
      * @return The encoded work unit.
      */
     private String encodeWorkUnit(WorkUnit workUnit, OperationSize operationSize) {
-        StringJoiner morseWords = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
+        StringJoiner morseTextSegments = new StringJoiner(MORSE_CODE_WORD_DELIMITER);
 
         BitReader bitReader = workUnit.getBitReader();
 
-        CircularFifoQueue<String> previousWords = new CircularFifoQueue<>(3);  // Tracks the last 3 selected words for scoring purposes.
+        // Track the last 3 selected text segments for scoring purposes.
+        CircularFifoQueue<String> previousTextSegments = new CircularFifoQueue<>(3);
         while (bitReader.hasRemaining()) {
-            MorseDictionaryEntry entry = findWord(workUnit, previousWords, operationSize);
-            morseWords.add(entry.getMorse());
-            bitReader.advance(entry.getBitLength());
-            previousWords.add(entry.getEnglish());
+            TextSegment text = findText(workUnit, previousTextSegments, operationSize);
+            morseTextSegments.add(text.getMorse());
+            bitReader.advance(text.getBitLength());
+            previousTextSegments.add(text.getEnglish());
         }
-        return morseWords.toString();
+        return morseTextSegments.toString();
     }
 
     /**
-     * Finds a word in Morse code that matches the start of (or the entire) bit pattern at the current index in the work unit.
+     * Finds a text segment that matches the start of (or the entire) bit pattern at the current index in the work unit.
      * In the event that multiple matches are found, the one with the highest score will be returned.
      * <p>
-     * For example, if the input started with ".--", that could match the word "at" (which is ".- -" in morse).
+     * For example, if the input started with <code>011</code>, the morse pattern would be <code>.--</code>.
+     * And that could match the word "at" (which is <code>.- -</code> in Morse).
      * <p>
      * Helper method for {@link #encodeWorkUnit(WorkUnit, OperationSize)}.
      *
-     * @param workUnit      Work unit containing the input data and a bit reader.
-     * @param previousWords The N previously selected words. This should not be an exhaustive list.
-     *                      Used in determining a word's score.
-     * @param operationSize The size of the overarching operation.
-     * @return A word that matches the start of the input, but with spaces at letter breaks.
+     * @param workUnit             Work unit containing the input data and a bit reader.
+     * @param previousTextSegments The N previously selected text segments in English. This should not be an exhaustive list.
+     *                             Used in determining a text segment's score.
+     * @param operationSize        The size of the overarching operation.
+     * @return A text segment that matches the start of the input.
      */
-    private MorseDictionaryEntry findWord(WorkUnit workUnit, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
+    private TextSegment findText(WorkUnit workUnit, CircularFifoQueue<String> previousTextSegments, OperationSize operationSize) {
 
-        final Set<Match> matchingWords = searchTrie(workUnit, previousWords, operationSize);
+        final Set<Match> matchingTextSegments = searchTrie(workUnit, previousTextSegments, operationSize);
 
-        return matchingWords.stream()
+        return matchingTextSegments.stream()
             .max(Comparator.comparingDouble(Match::score)
                 .thenComparing(x -> ThreadLocalRandom.current().nextInt())
             )
-            .orElse(findLetter(workUnit)) // Find a matching letter if there were no matching words.
+            .orElse(findLetter(workUnit)) // Find a matching letter if there were no matching text segments.
             .entry();
     }
 
     /**
-     * Searches the trie for words that match the start of (or the entire) bit pattern at the current index in the work unit.
+     * Searches the trie for text segments that match the start of (or the entire) bit pattern at the current index in the work unit.
      * <p>
-     * Helper method for {@link #findWord(WorkUnit, CircularFifoQueue, OperationSize)}.
+     * Helper method for {@link #findText(WorkUnit, CircularFifoQueue, OperationSize)}.
      *
-     * @param workUnit      Work unit containing the input data and a bit reader.
-     * @param previousWords The N previously selected words. This should not be an exhaustive list.
-     *                      Used in determining a word's score.
-     * @param operationSize The size of the over arching operation.
+     * @param workUnit             Work unit containing the input data and a bit reader.
+     * @param previousTextSegments The N previously selected text segments. This should not be an exhaustive list.
+     *                             Used in determining a text segment's score.
+     * @param operationSize        The size of the over arching operation.
      * @return The set of matches.
      */
-    private Set<Match> searchTrie(WorkUnit workUnit, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
-        final Set<Match> matchingWords = new HashSet<>();
+    private Set<Match> searchTrie(WorkUnit workUnit, CircularFifoQueue<String> previousTextSegments, OperationSize operationSize) {
+        final Set<Match> matchingTextSegments = new HashSet<>();
 
         MorseTrieNode node = this.morseTrie.getRoot();
         int maxDepth = workUnit.getBitReader().remainingBits();
         for (int i = 0; i < maxDepth; i++) {
             // Break early if we reach a leaf or the requisite number of matches has been found.
-            if (node == null || matchingWords.size() >= operationSize.matchTarget) {
+            if (node == null || matchingTextSegments.size() >= operationSize.matchTarget) {
                 break;
             }
-            for (MorseDictionaryEntry entry : node.getEntries()) {
-                final double score = scoreWord(entry, previousWords);
-                matchingWords.add(new Match(entry, score));
+            for (TextSegment textSegment : node.getTextSegments()) {
+                final double score = scoreTextSegment(textSegment, previousTextSegments);
+                matchingTextSegments.add(new Match(textSegment, score));
             }
 
             int bit = workUnit.getBitReader().getBit(i);
             node = (bit == 0) ? node.dot : node.dash;
         }
-        return matchingWords;
+        return matchingTextSegments;
     }
 
     /**
@@ -357,30 +359,30 @@ public class EncodeService {
             node = this.singleCharacterTree.get(morsePrefix);
         }
         String morse = node.getEncoding().getCode();
-        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse, 1.0);
+        TextSegment entry = new TextSegment("", morse, 1.0);
 
         return new Match(entry, 0);
     }
 
     /**
-     * Score a given word so that it can be compared to other matching words.
+     * Score a given text segment so that it can be compared to other matching text segments.
      *
-     * @param entry         The word to score.
-     * @param previousWords The N previously selected words. This should not be an exhaustive list. If word appears in the
-     *                      previousWords, it will have a negative impact on the score.
-     * @return The word score.
+     * @param textSegment          The text segment to score.
+     * @param previousTextSegments The N previously selected text segments. This should not be an exhaustive list.
+     *                             If text segment appears in the previousTextSegments, it will have a negative impact on the score.
+     * @return The text segment's score.
      */
-    private static double scoreWord(MorseDictionaryEntry entry, CircularFifoQueue<String> previousWords) {
+    private static double scoreTextSegment(TextSegment textSegment, CircularFifoQueue<String> previousTextSegments) {
         // Some file formats produce long sections of repeating bit patterns, this can result in the exact same word being
         // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
-        double previousWordMultiplier = 1.0;
-        for (int i = 0; i < previousWords.size(); i++) {
-            previousWordMultiplier -= entry.getEnglish().equals(previousWords.get(i)) ? 0.2 : 0.0;
+        double previousTextMultiplier = 1.0;
+        for (int i = 0; i < previousTextSegments.size(); i++) {
+            previousTextMultiplier -= textSegment.getEnglish().equals(previousTextSegments.get(i)) ? 0.2 : 0.0;
         }
 
-        double acronymMultiplier = entry.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
+        double acronymMultiplier = textSegment.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
 
-        return entry.getNumberOfLetters() * previousWordMultiplier * entry.getScoreMultiplier() * acronymMultiplier;
+        return textSegment.getNumberOfLetters() * previousTextMultiplier * textSegment.getScoreMultiplier() * acronymMultiplier;
     }
 
     /**
