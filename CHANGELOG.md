@@ -10,12 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Progress printing now includes time elapsed and estimated time remaining
+* low memory encoding flag
 
 ### Changed
 
-* Now using a weighted dictionary approach for finding Morse code words. Multiple dictionaries can be searched in a 
-  predetermined order looking for valid mappings. Each dictionary has a multiplier that can be applied when scoring 
-  words so that certain dictionaries can be favored over others.
+* Now using a weighted dictionary approach for finding Morse code words. Each dictionary has a multiplier that can be
+  applied when scoring words so that certain dictionaries can be favored over others.
 * Dictionaries are loaded into memory as prefix tree for greatly improved processing times
 * Now using n-gram dictionaries to improve logical chaining of words
 * Number of "matching word to find before selection" now scales with the number of work units

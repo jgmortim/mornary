@@ -76,12 +76,19 @@ public class Mornary implements Callable<Integer> {
     )
     int numThreads;
 
+    @Option(
+        order = 6,
+        names = {"-m", "--low-memory"}, paramLabel = "<boolean>", defaultValue = "false",
+        description = "Reduces the dictionary size in order to reduce the memory footprint of the app. Only used for encoding."
+    )
+    boolean lowMemory;
+
     @Override
     public Integer call() throws Exception {
 
         if (this.operation.encodeText != null || this.operation.encodeFile != null) { // Encoding.
 
-            EncodeService encodeService = new EncodeService(1024, this.numThreads);
+            EncodeService encodeService = new EncodeService(1024, this.numThreads, this.lowMemory);
 
             if (this.operation.encodeText != null) {
                 encodeService.encode(this.operation.encodeText, this.outputFile);

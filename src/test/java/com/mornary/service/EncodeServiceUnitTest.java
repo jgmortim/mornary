@@ -27,7 +27,7 @@ public class EncodeServiceUnitTest {
 
     static {
         try {
-            SERVICE = new EncodeService(1024, 10);
+            SERVICE = new EncodeService(1024, 10, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

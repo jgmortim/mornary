@@ -15,7 +15,9 @@ public class MorseTrieNode {
     }
 
     public void addEntry(MorseDictionaryEntry entry) {
-        if (entries == null) entries = new ArrayList<>(1);
+        if (entries == null) {
+            entries = new ArrayList<>(1);
+        }
         entries.add(entry);
     }
 }

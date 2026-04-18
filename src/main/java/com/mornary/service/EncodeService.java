@@ -57,7 +57,7 @@ public class EncodeService {
     private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 30, 1.0);    // Top 5000 common English words
     private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 20, 1.0);
     private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", 20, .9);  // 5000 English 2grams
-    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .8); // Hugh English dictionary
+    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", 10, .7); // Hugh English dictionary
 
     static final List<WeightedDictionary> DICTIONARIES = List.of(
         DICT_FIVE_GRAM,
@@ -69,10 +69,10 @@ public class EncodeService {
     );
 
     static final List<WeightedDictionary> DICTIONARIES_REDUCED_SET = List.of(
-        DICT_COMMON,
-        DICT_TWO_GRAM,
-        DICT_RARE
+        DICT_COMMON
     );
+
+    private final MorseTrie morseTrie = new MorseTrie();
 
     private final PrintService printService;
 
@@ -88,7 +88,7 @@ public class EncodeService {
      * @param workUnitSize   The number of bytes of input to be processed per thread task.
      * @param threadPoolSize The number of threads to use for encoding.
      */
-    public EncodeService(int workUnitSize, int threadPoolSize) throws IOException {
+    public EncodeService(int workUnitSize, int threadPoolSize, boolean lowMemory) throws IOException {
         this.workUnitSize = workUnitSize;
         this.threadPoolSize = threadPoolSize;
         this.queueCapacity = threadPoolSize + 10;
@@ -102,7 +102,9 @@ public class EncodeService {
         }
 
         // Load in dictionary files.
-        for (WeightedDictionary weightedDictionary : Set.of(DICT_FIVE_GRAM, DICT_FOUR_GRAM, DICT_COMMON, DICT_THREE_GRAM, DICT_TWO_GRAM, DICT_RARE)) {
+        List<WeightedDictionary> dictionaries = lowMemory ? DICTIONARIES_REDUCED_SET :  DICTIONARIES;
+
+        for (WeightedDictionary weightedDictionary : dictionaries) {
             try (
                 InputStream is = getClass().getResourceAsStream(weightedDictionary.getFilename())
             ) {
@@ -114,10 +116,10 @@ public class EncodeService {
                     .lines()
                     .map(word -> {
                         String morse = MorseCode.convertToMorseCode(word).replace("  ", " / ");
-                        return new MorseDictionaryEntry(word, morse);
+                        return new MorseDictionaryEntry(word, morse, weightedDictionary.getScoreMultiplier());
                     })
                     .distinct()
-                    .forEach(weightedDictionary.getTrieDictionary()::insert);
+                    .forEach(this.morseTrie::insert);
 
             } catch (IOException e) {
                 throw new RuntimeException("Failed to load dictionary", e);
@@ -285,16 +287,7 @@ public class EncodeService {
 
         final Set<Match> matchingWords = new HashSet<>();
 
-        final List<WeightedDictionary> dictionaries = operationSize.usesReducedDictionarySet()
-            ? DICTIONARIES_REDUCED_SET
-            : DICTIONARIES;
-
-        for (WeightedDictionary dictionary : dictionaries) {
-            searchDictionary(dictionary, bitReader, matchingWords, previousWords, operationSize);
-            if (matchingWords.size() >= operationSize.matchTarget) {
-                break;
-            }
-        }
+        searchTrie(bitReader, matchingWords, previousWords, operationSize);
 
         return matchingWords.stream()
             .max(Comparator.comparingDouble(Match::score)
@@ -305,20 +298,18 @@ public class EncodeService {
     }
 
     /**
-     * Searches a weighted dictionary for words that match the start of (or the entire) input and adds them to the set of matches.
+     * Searches the trie for words that match the start of (or the entire) input and adds them to the set of matches.
      * <p>
      * Helper method for {@link #findWord(BitReader, CircularFifoQueue, OperationSize)}.
      *
-     * @param weightedDictionary The weighted dictionary to search.
-     * @param bitReader          Bit reader containing the input data.
-     * @param matches            The list that matching words should be added to.
-     * @param previousWords      The N previously selected words. This should not be an exhaustive list.
-     *                           Used in determining a word's score.
-     * @param operationSize      The size of the over arching operation.
+     * @param bitReader     Bit reader containing the input data.
+     * @param matches       The list that matching words should be added to.
+     * @param previousWords The N previously selected words. This should not be an exhaustive list.
+     *                      Used in determining a word's score.
+     * @param operationSize The size of the over arching operation.
      */
-    private void searchDictionary(WeightedDictionary weightedDictionary, BitReader bitReader, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
-        MorseTrie trie = weightedDictionary.getTrieDictionary();
-        MorseTrieNode node = trie.root();
+    private void searchTrie(BitReader bitReader, Set<Match> matches, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
+        MorseTrieNode node = this.morseTrie.root();
         int maxDepth = bitReader.remainingBits();
         int matchesFromDictionary = 0;
                 for (int i = 0; i < maxDepth; i++) {
@@ -328,7 +319,7 @@ public class EncodeService {
             }
             if (node.entries != null && !node.entries.isEmpty()) {
                 node.entries.forEach(entry -> {
-                    final double score = scoreWord(entry, previousWords, weightedDictionary.getScoreMultiplier());
+                    final double score = scoreWord(entry, previousWords);
                     matches.add(new Match(entry, score));
                 });
                 matchesFromDictionary += node.entries.size();
@@ -369,7 +360,7 @@ public class EncodeService {
             node = this.tree.get(morsePrefix);
         }
         String morse = node.getEncoding().getCode();
-        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse);
+        MorseDictionaryEntry entry = new MorseDictionaryEntry("", morse, 1.0);
 
         return new Match(entry, 0);
     }
@@ -382,7 +373,7 @@ public class EncodeService {
      *                      previousWords, it will have a negative impact on the score.
      * @return The word score.
      */
-    private static double scoreWord(MorseDictionaryEntry entry, CircularFifoQueue<String> previousWords, double dictionaryMultiplier) {
+    private static double scoreWord(MorseDictionaryEntry entry, CircularFifoQueue<String> previousWords) {
         // Some file formats produce long sections of repeating bit patterns, this can result in the exact same word being
         // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
         double previousWordMultiplier = 1.0;
@@ -392,7 +383,7 @@ public class EncodeService {
 
         double acronymMultiplier = entry.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
 
-        return entry.getNumberOfLetters() * previousWordMultiplier * dictionaryMultiplier * acronymMultiplier;
+        return entry.getNumberOfLetters() * previousWordMultiplier * entry.getScoreMultiplier() * acronymMultiplier;
     }
 
     /**

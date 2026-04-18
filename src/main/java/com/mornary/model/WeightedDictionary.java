@@ -15,8 +15,6 @@ public class WeightedDictionary {
     private final double scoreMultiplier;
     private final int maxMatchesForDictionary;
 
-    private final MorseTrie trieDictionary = new MorseTrie();
-
     /**
      * Constructs a new weighted dictionary.
      *

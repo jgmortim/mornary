@@ -33,7 +33,7 @@ public class MornaryIntegrationTest {
 
     static {
         try {
-            ENCODE_SERVICE = new EncodeService(1024, 10);
+            ENCODE_SERVICE = new EncodeService(1024, 10, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

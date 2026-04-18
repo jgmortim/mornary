@@ -40,15 +40,19 @@ public final class MorseDictionaryEntry {
      */
     private final int numberOfLetters;
 
+    private final double scoreMultiplier;
+
     /**
      * Constructs a new Morse dictionary entry.
      *
-     * @param english The English word.
-     * @param morse   The word in Morse code with spaces for letter breaks.
+     * @param english         The English word.
+     * @param morse           The word in Morse code with spaces for letter breaks.
+     * @param scoreMultiplier Score multiplier for this word
      */
-    public MorseDictionaryEntry(String english, String morse) {
+    public MorseDictionaryEntry(String english, String morse, double scoreMultiplier) {
         this.english = english;
         this.morse = morse;
+        this.scoreMultiplier = scoreMultiplier;
 
         this.numberOfLetters = english.replaceAll(" ", "").length();
 
