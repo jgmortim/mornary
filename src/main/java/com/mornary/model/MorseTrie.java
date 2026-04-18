@@ -1,7 +1,18 @@
 package com.mornary.model;
 
+import lombok.Getter;
+
+/**
+ * A binary tree implementation based on Morse code. Dots branch left and dashes branch right.
+ *
+ * @author John Mortimore
+ */
+@Getter
 public class MorseTrie {
 
+    /**
+     * The root node of the tree.
+     */
     private final MorseTrieNode root = new MorseTrieNode();
 
     /**
@@ -30,9 +41,5 @@ public class MorseTrie {
         }
 
         node.addEntry(entry);
-    }
-
-    public MorseTrieNode root() {
-        return root;
     }
 }

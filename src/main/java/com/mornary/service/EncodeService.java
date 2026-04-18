@@ -2,7 +2,7 @@ package com.mornary.service;
 
 import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mornary.model.BinaryTree;
+import com.mornary.model.EncodingBinaryTree;
 import com.mornary.model.BitReader;
 import com.mornary.model.MorseTrie;
 import com.mornary.model.MorseTrieNode;
@@ -50,7 +50,7 @@ public class EncodeService {
 
     private static final String MORSE_CODE_WORD_DELIMITER = " / ";
 
-    private final BinaryTree singleCharacterTree;
+    private final EncodingBinaryTree singleCharacterTree;
 
     private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 1.5);
     private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 1.1);
@@ -98,7 +98,7 @@ public class EncodeService {
         assert morseUrl != null;
         try (InputStream in = morseUrl.openStream()) {
             Encoding[] encodings = OBJECT_MAPPER.readValue(in, Encoding[].class);
-            this.singleCharacterTree = new BinaryTree(encodings);
+            this.singleCharacterTree = new EncodingBinaryTree(encodings);
         }
 
         // Load in dictionary files.
@@ -309,7 +309,7 @@ public class EncodeService {
     private Set<Match> searchTrie(WorkUnit workUnit, CircularFifoQueue<String> previousWords, OperationSize operationSize) {
         final Set<Match> matchingWords = new HashSet<>();
 
-        MorseTrieNode node = this.morseTrie.root();
+        MorseTrieNode node = this.morseTrie.getRoot();
         int maxDepth = workUnit.getBitReader().remainingBits();
         for (int i = 0; i < maxDepth; i++) {
             // Break early if we reach a leaf or the requisite number of matches has been found.

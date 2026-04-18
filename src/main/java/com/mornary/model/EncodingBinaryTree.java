@@ -5,11 +5,12 @@ import lombok.Getter;
 import java.util.Arrays;
 
 /**
- * A binary tree implementation based on Morse code. Dots branch left and dashes branch right.
+ * A binary tree implementation based on Morse code. Dots branch left and dashes branch right. This tree is designed to hold
+ * all single character Morse encodings. It is not more word encodings. See {@link MorseTrie} for word encodings.
  *
  * @author John Mortimore
  */
-public class BinaryTree {
+public class EncodingBinaryTree {
 
     /**
      * The root node of the tree.
@@ -23,11 +24,11 @@ public class BinaryTree {
     private int maxDepth = 0;
 
     /**
-     * Constructs a new BinaryTree from the given array of encodings.
+     * Constructs a new EncodingBinaryTree from the given array of encodings.
      *
      * @param encodings The array of encodings to populate the tree with.
      */
-    public BinaryTree(Encoding[] encodings) {
+    public EncodingBinaryTree(Encoding[] encodings) {
         this.addAll(encodings);
     }
 
