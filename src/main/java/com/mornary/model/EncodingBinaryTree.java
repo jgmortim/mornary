@@ -15,7 +15,7 @@ public class EncodingBinaryTree {
     /**
      * The root node of the tree.
      */
-    private Node root;
+    private EncodingNode root;
 
     /**
      * The depth of the deepest node in the tree.
@@ -59,10 +59,10 @@ public class EncodingBinaryTree {
      * @param remainingCode The reminder of the code to process beyond the current node.
      * @return The node that was added.
      */
-    private Node addRecursive(Encoding encoding, Node current, String remainingCode) {
+    private EncodingNode addRecursive(Encoding encoding, EncodingNode current, String remainingCode) {
         if (remainingCode.isEmpty()) {
             if (current == null) {
-                return new Node(encoding);
+                return new EncodingNode(encoding);
             } else {
                 current.encoding = encoding;
                 return current;
@@ -70,7 +70,7 @@ public class EncodingBinaryTree {
         }
 
         if (current == null) {
-            current = new Node(null);
+            current = new EncodingNode(null);
         }
 
         if ('.' == remainingCode.charAt(0)) {
@@ -88,7 +88,7 @@ public class EncodingBinaryTree {
      * @param code A string of dots and dashes.
      * @return The node in the tree represented by the given code.
      */
-    public Node get(String code) {
+    public EncodingNode get(String code) {
         return this.get(root, code);
     }
 
@@ -99,7 +99,7 @@ public class EncodingBinaryTree {
      * @param code         A string of dots and dashes.
      * @return The node in the tree represented by the given code as traversed from the StartingNode.
      */
-    private Node get(Node StartingNode, String code) {
+    private EncodingNode get(EncodingNode StartingNode, String code) {
         if (code.isEmpty() || StartingNode == null) {
             return StartingNode;
         }

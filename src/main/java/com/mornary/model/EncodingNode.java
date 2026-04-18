@@ -7,18 +7,18 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Represents a Morse code node in a Morse code binary tree.
+ * Represents a Morse code node in a {@link EncodingBinaryTree}.
  *
  * @author John Mortimore
  */
 @Getter
-public class Node {
+public class EncodingNode {
     Encoding encoding;
-    Node left;
-    Node right;
+    EncodingNode left;
+    EncodingNode right;
 
 
-    Node(Encoding encoding) {
+    EncodingNode(Encoding encoding) {
         this.encoding = encoding;
         right = null;
         left = null;
@@ -35,7 +35,7 @@ public class Node {
         buffer.append(encoding.getCharacter());
         buffer.append('\n');
 
-        Set<Node> children = new HashSet<>();
+        Set<EncodingNode> children = new HashSet<>();
         if (left != null) {
             children.add(left);
         }
@@ -43,8 +43,8 @@ public class Node {
             children.add(right);
         }
 
-        for (Iterator<Node> it = children.iterator(); it.hasNext();) {
-            Node next = it.next();
+        for (Iterator<EncodingNode> it = children.iterator(); it.hasNext();) {
+            EncodingNode next = it.next();
             if (it.hasNext()) {
                 next.print(buffer, childrenPrefix + "├── ", childrenPrefix + "│   ");
             } else {

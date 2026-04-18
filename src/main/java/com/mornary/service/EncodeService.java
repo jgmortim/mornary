@@ -338,7 +338,7 @@ public class EncodeService {
      * @return A randomly selected letter that matches the start of the input.
      */
     private Match findLetter(WorkUnit workUnit) {
-        Node node = null;
+        EncodingNode node = null;
         int maxLength = Math.min(workUnit.getBitReader().remainingBits(), this.singleCharacterTree.getMaxDepth());
 
         // Loop until a valid morse encoding is randomly selected
