@@ -17,7 +17,7 @@ public class Encoding {
     /**
      * The character. For example, "A".
      */
-    private String character;
+    private char character;
 
     /**
      * The code. For example, ".-".

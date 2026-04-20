@@ -1,6 +1,5 @@
 package com.mornary.service;
 
-import com.epic.morse.service.MorseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mornary.model.EncodingBinaryTree;
 import com.mornary.model.BitReader;
@@ -14,6 +13,7 @@ import com.mornary.model.TextSegment;
 import com.mornary.model.EncodingNode;
 import com.mornary.model.Match;
 import com.mornary.model.WorkUnit;
+import com.mornary.utility.MorseUtility;
 import com.mornary.utility.OutputUtility;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
@@ -115,7 +115,7 @@ public class EncodeService {
                 new BufferedReader(new InputStreamReader(is))
                     .lines()
                     .map(englishText -> {
-                        String morse = MorseCode.convertToMorseCode(englishText).replace("  ", " / ");
+                        String morse = MorseUtility.toMorseCode(englishText);
                         return new TextSegment(englishText, morse, weightedDictionary.scoreMultiplier());
                     })
                     .distinct()
