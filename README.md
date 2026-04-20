@@ -48,8 +48,8 @@ cd mornary
 
 The following is copy of `mornary --help`:
 ```
-Usage: mornary [-hV] [-O=<file>] [-t=<int>] (-e=<text> | -E=<file> | -d=<text> | -D=<file>)
-Generative steganography using morse code.
+Usage: mornary [-hVm] [-O=<file>] [-t=<int>] (-e=<text> | -E=<file> | -d=<text> | -D=<file>)
+Generative steganography using Morse code.
   -h, --help            Show this help message and exit.
   -V, --version         Print version information and exit.
   -e, --encode=<text>   Encodes the supplied text.
@@ -58,6 +58,7 @@ Generative steganography using morse code.
   -D, --Decode=<file>   Decodes the Mornary-encoded contents of the supplied file.
   -O, --Output=<file>   Writes the output to the supplied file. If omitted, output will be printed to the console.
   -t, --threads=<int>   Sets the thread pool size. Only used when encoding files. Defaults to 10.
+  -m, --low-memory      Reduces the dictionary size in order to reduce the memory footprint of the app. Only used for encoding.
 ```
 
 ### Examples:

@@ -144,7 +144,7 @@ public class EncodeService {
 
         WorkUnit workUnit = new WorkUnit(data, data.length, 0);
 
-        String encodedWorkUnit = this.encodeWorkUnit(workUnit, OperationSize.TINY);
+        String encodedWorkUnit = this.encodeWorkUnit(workUnit, OperationSize.SMALL);
 
         try (BufferedWriter writer = OutputUtility.createWriter(output)) {
             writer.write(encodedWorkUnit);

@@ -1,11 +1,9 @@
 package com.mornary.model;
 
 public enum OperationSize {
-    TINY(1, 100),
-    SMALL(5, 50),
-    MEDIUM(20, 25),
-    LARGE(50, 10),
-    HUGE(100, 2);
+    SMALL(1, 100),
+    MEDIUM(5, 50),
+    LARGE(20, 25);
 
     public final long maxNumberOfWorkUnits;
     public final int matchTarget;
@@ -21,6 +19,6 @@ public enum OperationSize {
                 return size;
             }
         }
-        return OperationSize.HUGE;
+        return OperationSize.LARGE;
     }
 }
