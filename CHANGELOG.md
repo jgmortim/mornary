@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependency Updates
 
+* jackson-databind from `2.21.1` to `2.21.2`
 * lombok from `1.18.42` to `1.18.44`
 * Removed morse-code-translator dependency
 
