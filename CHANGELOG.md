@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Progress printing now includes time elapsed and estimated time remaining
 * Low memory encoding flag
 
+### Fixed
+
+* #1: no longer missing final line separator in Linux
+
 ### Changed
 
 * Now using a weighted dictionary approach for finding Morse code words. Each dictionary has a multiplier that can be
