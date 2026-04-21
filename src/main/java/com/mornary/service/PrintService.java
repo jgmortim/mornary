@@ -2,6 +2,7 @@ package com.mornary.service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Service for printing progress updates to the console.
@@ -31,9 +32,10 @@ public class PrintService {
         Instant now = Instant.now();
 
         long secondsSinceLastPrint = Duration.between(this.lastProgressPrint, now).getSeconds();
+        final boolean jobCompleted = workUnitsWritten == totalWorkUnits;
 
-        // Print at most once per second
-        if (secondsSinceLastPrint >= 1) {
+        // Print at most once per second, unless this is the final work unit.
+        if (secondsSinceLastPrint >= 1 || jobCompleted) {
             double progress = ((double) workUnitsWritten / totalWorkUnits);
             double percent = progress * 100.0;
 
@@ -44,6 +46,9 @@ public class PrintService {
             System.out.printf("\rWork Units Completed: %d of %d (%.2f%%). Elapsed Time: %ss. Estimated Time Remaining: %ss",
                 workUnitsWritten, totalWorkUnits, percent, seconds, estimatedSecondsRemaining);
             this.lastProgressPrint = now;
+            if (jobCompleted) {
+                System.out.println(System.lineSeparator() + "Job Completed at: " + LocalDateTime.now());
+            }
         }
     }
 }
