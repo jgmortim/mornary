@@ -7,10 +7,7 @@ This application is covered in much greater depth at https://mornary.com
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jgmortim/mornary/total)
 ![License](https://img.shields.io/github/license/jgmortim/mornary)
 
-```
-mornary -e "demo"
-.--. .-.. .- -. . - / .- .-- .- -.- . / -- .- - - / -
-```
+![demo.gif](demo.gif)
 
 Mornary is an open-source command-line application that encodes arbitrary binary data as Morse code that decodes into
 English words. A standard Morse decoder sees ordinary text, while a Mornary decoder reconstructs the hidden binary 
