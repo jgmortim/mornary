@@ -48,6 +48,9 @@ public class DecodeService {
 
             if (output != null || AsciiUtility.isAsciiText(decodedData)) {
                 outputStream.write(decodedData);
+                if (output == null) { // Write an extra line separator for console output.
+                    outputStream.write(System.lineSeparator().getBytes());
+                }
             } else {
                 throw new NotTextException();
             }
@@ -117,6 +120,9 @@ public class DecodeService {
                                    "Remaining bits not written to output: " + binaryStringBuffer);
             }
 
+            if (output == null) { // Write an extra line separator at the end for console output.
+                outputStream.write(System.lineSeparator().getBytes());
+            }
 
         } catch (IOException e) {
             System.err.printf("Failed to read from %s: %s%n", input, e.getMessage());

@@ -58,7 +58,7 @@ public class EncodeServiceUnitTest {
 
         SERVICE.encode(input, null);
 
-        final String actual = outputStreamCaptor.toString();
+        final String actual = outputStreamCaptor.toString().trim();
 
         assertTrue(actual.matches("^[.\\- /]+$")); // Only dots, dashes, spaces, and slashes.
 

@@ -148,6 +148,9 @@ public class EncodeService {
 
         try (BufferedWriter writer = OutputUtility.createWriter(output)) {
             writer.write(encodedWorkUnit);
+            if (output == null) { // Write an extra line separator for console output.
+                writer.newLine();
+            }
         }
     }
 

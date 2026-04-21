@@ -46,7 +46,7 @@ public class DecodeServiceUnitTest {
 
         SERVICE.decode(input, null);
 
-        assertEquals(expected, outputStreamCaptor.toString());
+        assertEquals(expected, outputStreamCaptor.toString().trim());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class DecodeServiceUnitTest {
 
         SERVICE.decode(input, null);
 
-        assertEquals(expected, outputStreamCaptor.toString());
+        assertEquals(expected, outputStreamCaptor.toString().trim());
     }
 
     @Test
