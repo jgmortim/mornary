@@ -3,7 +3,7 @@
 This application is covered in much greater depth at https://mornary.com
 
 [![Website](https://img.shields.io/website?url=https%3A%2F%2Fmornary.com)](https://mornary.com/)
-![Java](https://img.shields.io/badge/java-17-blue)
+![Java](https://img.shields.io/badge/java-21-blue)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jgmortim/mornary/total)
 ![License](https://img.shields.io/github/license/jgmortim/mornary)
 
