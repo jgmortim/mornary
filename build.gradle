@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.gradleup.shadow' version '8.3.0'
+    id 'com.gradleup.shadow' version '9.4.1'
 }
 
 group = 'com.mornary'
@@ -26,9 +26,19 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.44")
     annotationProcessor("org.projectlombok:lombok:1.18.44")
 
+    // JUnit 5 API and Engine
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation('org.junit.jupiter:junit-jupiter')
+
+    // Gradle 9+: Launcher for the JUnit platform
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
     testImplementation("commons-io:commons-io:2.21.0")
+}
+
+wrapper {
+    gradleVersion = '9.4.1'
+    distributionType = Wrapper.DistributionType.BIN
 }
 
 java {
