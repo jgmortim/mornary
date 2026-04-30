@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependency Updates
 
 * shadow from `8.3.0` to `9.4.1`
+* lombok from `1.18.44` to `1.18.46`
 
 ## [1.0.0] - 2026-04-20
 

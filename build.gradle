@@ -23,8 +23,8 @@ dependencies {
     implementation('info.picocli:picocli:4.7.7')
     annotationProcessor('info.picocli:picocli-codegen:4.7.7')
 
-    compileOnly("org.projectlombok:lombok:1.18.44")
-    annotationProcessor("org.projectlombok:lombok:1.18.44")
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // JUnit 5 API and Engine
     testImplementation platform('org.junit:junit-bom:5.10.0')
