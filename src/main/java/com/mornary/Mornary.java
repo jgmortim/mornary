@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
  */
 @Command(
     name = "mornary",
-    version = "Mornary 1.0.0-beta.1",
+    version = "Mornary 1.0.0",
     description = "Generative steganography using Morse code.",
     sortOptions = false,
     sortSynopsis = false,
