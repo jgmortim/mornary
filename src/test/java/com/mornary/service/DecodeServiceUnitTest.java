@@ -71,6 +71,7 @@ public class DecodeServiceUnitTest {
 
     @Test
     public void decodeTxtFile_noOutputFile_correctOutputPrintedToConsole() throws IOException, URISyntaxException {
+        //noinspection DataFlowIssue
         final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
 
         final String expected = "The quick brown fox jumps over the lazy dog.";
@@ -82,6 +83,7 @@ public class DecodeServiceUnitTest {
 
     @Test
     public void decodeTxtFile_outputFile_correctOutputWrittenToFile() throws IOException, URISyntaxException {
+        //noinspection DataFlowIssue
         final File input =  new File(getClass().getResource("/stego/SmallTextFileEncoded.txt").toURI());
 
         final String expected = "The quick brown fox jumps over the lazy dog.";

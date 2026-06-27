@@ -57,7 +57,7 @@ public class MornaryIntegrationTest {
             "/payloads/512kb.txt"
     })
     public void encodeAndDecode_outputFile_successful(String inputFile) throws IOException, URISyntaxException {
-
+        //noinspection DataFlowIssue
         final File input =  new File(getClass().getResource(inputFile).toURI());
         final File outputEncode = new File("testEncode.txt");
         final File outputDecode = new File("testDecode.txt");

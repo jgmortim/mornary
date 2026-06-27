@@ -96,6 +96,7 @@ public class EncodeServiceUnitTest {
 
     @Test
     public void encodeTxtFile_noOutputFile_validOutputPrintedToConsole() throws IOException, URISyntaxException {
+        //noinspection DataFlowIssue
         final File input =  new File(getClass().getResource("/payloads/SmallTextFile.txt").toURI());
 
         // Output is not deterministic, but with the letter and word breaks removed, it must match the following.
@@ -118,6 +119,7 @@ public class EncodeServiceUnitTest {
 
     @Test
     public void encodeTxtText_outputFile_validOutputWrittenToFile() throws IOException, URISyntaxException {
+        //noinspection DataFlowIssue
         final File input =  new File(getClass().getResource("/payloads/SmallTextFile.txt").toURI());
 
         // Output is not deterministic, but with the letter and word breaks removed, it must match the following.
