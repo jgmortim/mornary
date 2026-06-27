@@ -50,8 +50,6 @@ public class EncodeService {
 
     private static final String MORSE_CODE_WORD_DELIMITER = " / ";
 
-    private final EncodingBinaryTree singleCharacterTree;
-
     private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 1.5);
     private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 1.1);
     private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 1.0);    // Top 5000 common English words
@@ -59,7 +57,7 @@ public class EncodeService {
     private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", .9);  // 5000 English 2grams
     private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", .7); // Hugh English dictionary
 
-    static final List<WeightedDictionary> DICTIONARIES = List.of(
+    private static final List<WeightedDictionary> DICTIONARIES = List.of(
         DICT_FIVE_GRAM,
         DICT_FOUR_GRAM,
         DICT_COMMON,
@@ -68,9 +66,13 @@ public class EncodeService {
         DICT_RARE
     );
 
-    static final List<WeightedDictionary> DICTIONARIES_REDUCED_SET = List.of(
+    private static final List<WeightedDictionary> DICTIONARIES_REDUCED_SET = List.of(
         DICT_COMMON
     );
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private final EncodingBinaryTree singleCharacterTree;
 
     private final MorseTrie morseTrie = new MorseTrie();
 
@@ -79,8 +81,6 @@ public class EncodeService {
     private final int workUnitSize;
     private final int threadPoolSize;
     private final int queueCapacity;
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Constructs the MornaryService.
