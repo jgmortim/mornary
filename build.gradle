@@ -5,10 +5,10 @@ plugins {
 }
 
 group = 'com.mornary'
-version = '1.0.0'
+version = '1.0.1'
 
 ext {
-    msiVersion = '1.0.0' // Windows versions can only use numbers and periods.
+    msiVersion = '1.0.1' // Windows versions can only use numbers and periods.
 }
 
 repositories {
