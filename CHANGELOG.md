@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Upgraded Gradle from version `8.14.3` to `9.4.1`
+* Upgraded Gradle from version `8.14.3` to `9.6.1`
 
 ### Dependency Updates
 
