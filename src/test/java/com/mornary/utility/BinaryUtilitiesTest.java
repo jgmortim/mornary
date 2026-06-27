@@ -3,7 +3,6 @@ package com.mornary.utility;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test class for {@link BinaryUtilities}.

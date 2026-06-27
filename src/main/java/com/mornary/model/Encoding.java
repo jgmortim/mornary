@@ -15,12 +15,12 @@ import lombok.NoArgsConstructor;
 public class Encoding {
 
     /**
-     * The character. For example, "A".
+     * The character. For example, <code>A</code>.
      */
     private char character;
 
     /**
-     * The code. For example, ".-".
+     * The code. For example, <code>.-</code>.
      */
     private String code;
 }

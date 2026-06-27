@@ -57,7 +57,7 @@ public final class TextSegment {
         this.morse = morse;
         this.scoreMultiplier = scoreMultiplier;
 
-        this.numberOfLetters = english.replaceAll(" ", "").length();
+        this.numberOfLetters = english.replace(" ", "").length();
 
         this.morsePattern = morse.replace(" ", "").replace("/", "");
 

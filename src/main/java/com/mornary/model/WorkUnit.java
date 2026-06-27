@@ -16,12 +16,12 @@ public class WorkUnit {
      * The index of this work unit in the overarching operation. Work units are processed asynchronously, the index is needed to
      * reassemble the outputs in the right order.
      */
-    int index;
+     private final int index;
 
     /**
      * Bit reader for the work unit.
      */
-    BitReader bitReader;
+    private final BitReader bitReader;
 
     /**
      * Constructs a new work unit.
