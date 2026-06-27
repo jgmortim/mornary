@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependency Updates
 
-* shadow from `8.3.0` to `9.4.1`
+* common-io from `2.21.0` to `2.22.0`
+* jackson-databind from `2.21.2` to `3.2.0`
+* junit-bom from `5.10.0` to `5.13.4`
 * lombok from `1.18.44` to `1.18.46`
+* shadow from `8.3.0` to `9.4.1`
 
 ## [1.0.0] - 2026-04-20
 

@@ -1,7 +1,7 @@
 package com.mornary.utility;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mornary.model.Encoding;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;

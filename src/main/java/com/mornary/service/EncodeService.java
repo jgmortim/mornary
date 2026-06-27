@@ -1,21 +1,21 @@
 package com.mornary.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mornary.model.EncodingBinaryTree;
 import com.mornary.model.BitReader;
+import com.mornary.model.Encoding;
+import com.mornary.model.EncodingBinaryTree;
+import com.mornary.model.EncodingNode;
+import com.mornary.model.IndexedResult;
+import com.mornary.model.Match;
 import com.mornary.model.MorseTrie;
 import com.mornary.model.MorseTrieNode;
 import com.mornary.model.OperationSize;
-import com.mornary.model.WeightedDictionary;
-import com.mornary.model.Encoding;
-import com.mornary.model.IndexedResult;
 import com.mornary.model.TextSegment;
-import com.mornary.model.EncodingNode;
-import com.mornary.model.Match;
+import com.mornary.model.WeightedDictionary;
 import com.mornary.model.WorkUnit;
 import com.mornary.utility.MorseUtility;
 import com.mornary.utility.OutputUtility;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

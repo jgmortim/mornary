@@ -1,7 +1,7 @@
 package com.mornary;
 
-import com.mornary.converter.PositiveIntConverter;
 import com.mornary.configuration.ShortErrorMessageHandler;
+import com.mornary.converter.PositiveIntConverter;
 import com.mornary.service.DecodeService;
 import com.mornary.service.EncodeService;
 import picocli.CommandLine;

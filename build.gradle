@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation('com.fasterxml.jackson.core:jackson-databind:2.21.2')
+    implementation('tools.jackson.core:jackson-databind:3.2.0')
 
     implementation('org.apache.commons:commons-collections4:4.5.0')
 
@@ -27,13 +27,13 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // JUnit 5 API and Engine
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation('org.junit.jupiter:junit-jupiter')
 
     // Gradle 9+: Launcher for the JUnit platform
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    testImplementation("commons-io:commons-io:2.21.0")
+    testImplementation("commons-io:commons-io:2.22.0")
 }
 
 wrapper {
