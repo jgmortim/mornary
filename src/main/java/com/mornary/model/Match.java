@@ -8,5 +8,5 @@ package com.mornary.model;
  *
  * @author John Mortimore
  */
-public record Match(TextSegment entry, double score) {
+public record Match(TextSegment entry, float score) {
 }

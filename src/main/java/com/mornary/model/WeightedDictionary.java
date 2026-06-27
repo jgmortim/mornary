@@ -7,5 +7,5 @@ package com.mornary.model;
  * @param scoreMultiplier The multiplier to apply to the score of words found in this dictionary.
  * @author John Mortimore
  */
-public record WeightedDictionary(String filename, double scoreMultiplier) {
+public record WeightedDictionary(String filename, float scoreMultiplier) {
 }

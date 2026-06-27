@@ -50,12 +50,12 @@ public class EncodeService {
 
     private static final String MORSE_CODE_WORD_DELIMITER = " / ";
 
-    private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 1.5);
-    private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 1.1);
-    private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 1.0);    // Top 5000 common English words
-    private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 1.0);
-    private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", .9);  // 5000 English 2grams
-    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", .7); // Hugh English dictionary
+    private static final WeightedDictionary DICT_FIVE_GRAM = new WeightedDictionary("/5grams_english.txt", 1.5F);
+    private static final WeightedDictionary DICT_FOUR_GRAM = new WeightedDictionary("/4grams_english.txt", 1.1F);
+    private static final WeightedDictionary DICT_COMMON = new WeightedDictionary("/English5000.txt", 1.0F);    // Top 5000 common English words
+    private static final WeightedDictionary DICT_THREE_GRAM = new WeightedDictionary("/3grams_english.txt", 1.0F);
+    private static final WeightedDictionary DICT_TWO_GRAM = new WeightedDictionary("/2grams_english.txt", .9F);  // 5000 English 2grams
+    private static final WeightedDictionary DICT_RARE = new WeightedDictionary("/EnglishHugeAlpha.txt", .7F); // Hugh English dictionary
 
     private static final List<WeightedDictionary> DICTIONARIES = List.of(
         DICT_FIVE_GRAM,
@@ -322,7 +322,7 @@ public class EncodeService {
                 break;
             }
             for (TextSegment textSegment : node.getTextSegments()) {
-                final double score = scoreTextSegment(textSegment, previousTextSegments);
+                final float score = scoreTextSegment(textSegment, previousTextSegments);
                 matchingTextSegments.add(new Match(textSegment, score));
             }
 
@@ -362,7 +362,7 @@ public class EncodeService {
             node = this.singleCharacterTree.get(morsePrefix);
         }
         String morse = node.getEncoding().getCode();
-        TextSegment entry = new TextSegment("", morse, 1.0);
+        TextSegment entry = new TextSegment("", morse, 1.0F);
 
         return new Match(entry, 0);
     }
@@ -375,15 +375,15 @@ public class EncodeService {
      *                             If text segment appears in the previousTextSegments, it will have a negative impact on the score.
      * @return The text segment's score.
      */
-    private static double scoreTextSegment(TextSegment textSegment, CircularFifoQueue<String> previousTextSegments) {
+    private static float scoreTextSegment(TextSegment textSegment, CircularFifoQueue<String> previousTextSegments) {
         // Some file formats produce long sections of repeating bit patterns, this can result in the exact same word being
         // selected many times in a row. To reduce the likelihood of repeated words, we apply a penalty on word repeats.
-        double previousTextMultiplier = 1.0;
+        float previousTextMultiplier = 1.0F;
         for (int i = 0; i < previousTextSegments.size(); i++) {
-            previousTextMultiplier -= textSegment.getEnglish().equals(previousTextSegments.get(i)) ? 0.2 : 0.0;
+            previousTextMultiplier -= textSegment.getEnglish().equals(previousTextSegments.get(i)) ? 0.2F : 0.0F;
         }
 
-        double acronymMultiplier = textSegment.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0 : 0.5;
+        float acronymMultiplier = textSegment.getEnglish().toLowerCase().matches(".*[aeiou].*") ? 1.0F : 0.5F;
 
         return textSegment.getNumberOfLetters() * previousTextMultiplier * textSegment.getScoreMultiplier() * acronymMultiplier;
     }

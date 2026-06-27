@@ -43,7 +43,7 @@ public final class TextSegment {
     /**
      * The score multiplier for this word.
      */
-    private final double scoreMultiplier;
+    private final float scoreMultiplier;
 
     /**
      * Constructs a new Text Segment.
@@ -52,7 +52,7 @@ public final class TextSegment {
      * @param morse           The text in Morse code.
      * @param scoreMultiplier Score multiplier for this text segment.
      */
-    public TextSegment(String english, String morse, double scoreMultiplier) {
+    public TextSegment(String english, String morse, float scoreMultiplier) {
         this.english = english;
         this.morse = morse;
         this.scoreMultiplier = scoreMultiplier;

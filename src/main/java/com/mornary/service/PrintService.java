@@ -36,8 +36,8 @@ public class PrintService {
 
         // Print at most once per second, unless this is the final work unit.
         if (secondsSinceLastPrint >= 1 || jobCompleted) {
-            double progress = ((double) workUnitsWritten / totalWorkUnits);
-            double percent = progress * 100.0;
+            float progress = ((float) workUnitsWritten / totalWorkUnits);
+            float percent = progress * 100.0F;
 
             long seconds = Duration.between(this.startTime, now).getSeconds();
             long estimatedTotalSeconds = (long) (seconds / progress);
