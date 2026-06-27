@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 * Text segment scores and dictionary multipliers are stored as floats instead of doubles to reduce memory footprint
+* Eliminated `instaceof` checks in trie node for faster text segment retrieval 
 * Upgraded Gradle from version `8.14.3` to `9.6.1`
 
 ### Dependency Updates
